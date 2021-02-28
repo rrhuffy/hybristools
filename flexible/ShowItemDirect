@@ -1,0 +1,45 @@
+select distinct * from
+({{
+    Select
+        ({{
+            select {code} from {Type} where {pk}=
+            ({{
+                select SUBSTRING_INDEX(TRIM(',' FROM InheritancePathString), ',', 1) FROM {attributedescriptor} WHERE {pk}={ad.pk}
+            }})
+        }}) as firstType,
+        {ad.qualifier} as qualifier,
+        {fieldType.code} as fieldType,
+        {ad.extensionName} as extension,
+        {ad.unique} is not null as U,
+        {ad.modifiers}&512=512 as L,
+        {ad.modifiers}&2=2 as E,
+        {ad.modifiers}&8192=8192 && {ad.attributeHandler} is not null as D,
+        {ad.modifiers}&8192=8192 && {ad.attributeHandler} is null && {ad.persistenceType} is null as J,
+        {ad.modifiers}&8=8 as O,
+        {ad.itemType} = ({{select {pk} from {Type} where {code}='RelationDescriptor'}}) as R,
+        case ({{ select {code} from {Type} where {pk}={fieldType.itemType} }})
+            when 'ComposedType' then '1'
+            when 'CollectionType' then '*'
+            else '1'
+        end as C
+    from
+    {
+        AttributeDescriptor AS ad
+        JOIN Type AS t ON {ad.EnclosingType} = {t.PK}
+        JOIN Type AS fieldType ON {ad.attributeType} = {fieldType.PK}
+    }
+    where
+    (
+        UPPER({t.code}) = UPPER('$1') /* find sourceTypeCode equals to input ($1), ignoring case */
+        and
+        ( /* ignore fields from "Item" except when we are checking "Item" itself */
+            {ad.qualifier} not in ('creationtime','modifiedtime','pk','sealed','savedValues','allDocuments',
+                                   'synchronizedCopies','synchronizationSources','comments',
+                                   'assignedCockpitItemTemplates','itemtype','owner')
+            or UPPER('$1') = UPPER('Item')
+        )
+    )
+}}) innerTableToAllowOrderByWhileUsingPureSqlNonFlexibleSearchFieldNamedInheritancePathString
+order by
+    case when UPPER(firstType) = UPPER('$1') then 0 else 1 end,
+    UPPER(qualifier)
