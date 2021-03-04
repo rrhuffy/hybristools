@@ -2,10 +2,12 @@
 import argparse
 import json
 import logging
+import os
 import re
 from collections import defaultdict
 from datetime import datetime
 from urllib.parse import quote_plus
+from urllib.parse import urljoin
 
 import sys
 
@@ -20,15 +22,16 @@ parser = argparse.ArgumentParser('Script for executing query on last indexed (fl
 parser.add_argument('query', nargs='?', default='*:*', help='Query to execute, by default *:*')
 parser.add_argument('--index', default='.', help='Regex with index to use, case insensitive, default "." == any index')
 # TODO: maybe find solr address by using HAC (from ENV)? solrserver.instances.standalone.* and *.endpoint properties
-parser.add_argument('--address', default='https://localhost:8983',
-                    help='Address to SOLR, by default https://localhost:8983')
+parser.add_argument('--address',
+                    default=os.environ.get('HYBRIS_HAC_URL').replace('/hac', '').replace(':9002', ':8983'),
+                    help='SOLR address, by default: HYBRIS_HAC_URL with removed /hac suffix and changed 9002 into 8983')
 parser.add_argument('--user', default='solrserver', help='User to log into SOLR, by default solrserver')
 parser.add_argument('--password', default='server123', help='Password to use to log into SOLR, by default server123')
 logging_helper.add_logging_arguments_to_parser(parser)
 args = parser.parse_args()
 session, address = requests_helper.get_session_with_basic_http_auth_and_cleaned_address(args.address)
 
-metrics_address = f'{args.address}/solr/admin/metrics?type=gauge&prefix=CORE'
+metrics_address = urljoin(args.address, 'solr/admin/metrics?type=gauge&prefix=CORE')
 get = session.get(metrics_address, auth=(args.user, args.password), verify=False)
 
 name_to_index_with_timestamp = defaultdict(list)
