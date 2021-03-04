@@ -1,3 +1,5 @@
+import os
+
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -11,6 +13,9 @@ def create_firefox_webdriver(headless=False, implicit_wait_time=None):
     if headless:
         options = webdriver.FirefoxOptions()
         options.headless = True
+        # above command was working, but in firefox 84.0.2 it suddenly stopped working
+        # for at least 84.0.2 there must be MOZ_HEADLESS environment variable set to 1
+        os.environ['MOZ_HEADLESS'] = '1'
 
     try:  # try automatized version if available
         from webdriver_manager.firefox import GeckoDriverManager
