@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 # https://raw.githubusercontent.com/samlanning/tree.py/master/tree.py
 
 """
