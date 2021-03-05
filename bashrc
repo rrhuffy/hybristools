@@ -29,9 +29,9 @@ ylisten() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/listen_server_
 multiline_tabulate() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/multiline_tabulate.py "$@"; }
 unroll_pk() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/unroll_pk.py "$@"; }
 fill() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/fill_ignoring_ascii_escape_characters.py "$@"; }
-yinit() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/initialize_system.py "$@"; }
+yinit() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/update_initialize_system.py initialize "$@"; }
 yinitproject() { yinit "${PROJECT_PREFIX_LONG_LOWERCASE}patches,${PROJECT_PREFIX_LONG_LOWERCASE}patches:Include test data:yes" "$@"; }
-yupdate() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/update_running_system.py "$@"; }
+yupdate() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/update_initialize_system.py update "$@"; }
 yupdateproject() { yupdate "${PROJECT_PREFIX_LONG_LOWERCASE}patches:Include test data:yes" "$@"; }
 iimbo() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_impex_with_media_bo.py "$@"; }
 iimhmc() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_impex_with_media_hmc.py "$@"; }

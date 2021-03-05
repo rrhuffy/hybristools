@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-import datetime
 import logging
-import os
 import re
-import socket
-import time
 
+import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,11 +14,14 @@ from lib import hybris_selenium_helper
 from lib import logging_helper
 from lib import selenium_helper
 
-parser = argparse.ArgumentParser('Script that executes initialize hybris server')
+ACTIONS = ['update', 'initialize']
+
+parser = argparse.ArgumentParser('Script that executes update or initialize hybris server')
 hybris_argparse_helper.add_hybris_hac_arguments(parser)
 parser.add_argument('--pause', action='store_true', help='Pause before important steps')
-parser.add_argument('--sleep', action='store_true', help='Add 10s sleep before clicking update')
+parser.add_argument('--sleep', action='store_true', help='Add 10s sleep before clicking update/initialize')
 parser.add_argument('--headless', action='store_true', help='Use headless browser')
+parser.add_argument('action', help='Action to execute', choices=ACTIONS)
 parser.add_argument('extensions', type=str, nargs='*',
                     help='extensions to toggle: '
                          '"," is extensions separator, '
@@ -35,8 +35,14 @@ driver = selenium_helper.create_firefox_webdriver(args.headless)
 logging.debug(f'Logging into {args.address} as {args.user}')
 hybris_selenium_helper.log_into(driver, args.address, args.user, args.password)
 
-logging.debug(f'Opening {args.address}/platform/init')
-driver.get(args.address + '/platform/init')
+target_url = ''
+if args.action == 'update':
+    target_url = f'{args.address}/platform/update'
+elif args.action == 'initialize':
+    target_url = f'{args.address}/platform/init'
+
+logging.debug(f'Opening {target_url}')
+driver.get(target_url)
 
 print('Waiting until "Project data settings" is loaded (expecting at least "core" element loaded)')
 WebDriverWait(driver, 15).until(expected_conditions.text_to_be_present_in_element(
@@ -62,18 +68,15 @@ if args.extensions:
                 f'/..//dt[text()="{key}"]' +
                 f'/following-sibling::*[1]//option[@value="{value}"]').click()
 
-            # Select(driver.find_element_by_css_selector("select#idOfDropdown")).select_by_value('no')  # Select class
-            # driver.find_element_by_css_selector("select#idOfDropdown > option[value='no']").click()  # css selector
-            # driver.find_element_by_xpath("//select[@id='idOfDropdown']/option[@value='no']").click()  # xpath
-
 if args.pause:
-    helpers.pause_with_enter_or_exit('After selecting extensions, before clicking initialize button',
+    helpers.pause_with_enter_or_exit(f'After selecting extensions, before clicking {args.action} button',
                                      lambda: driver.quit())
 
 if args.sleep:
-    print('After selecting extensions, before clicking initialize button, starting 10s sleep...', end='', flush=True)
+    print(f'After selecting extensions, before clicking {args.action} button, starting 10s sleep...', end='',
+          flush=True)
     time.sleep(10)
-    print('done', flush=True)
+    print('done')
 
 button_execute = driver.find_element_by_class_name('buttonExecute')
 selenium_helper.wait_until_element_is_displayed(button_execute)
@@ -82,11 +85,10 @@ selenium_helper.wait_until_element_is_displayed(button_execute)
 # unknown error: Element <button class="buttonExecute">...</button> is not clickable at point (84, 9).
 # Other element would receive the click: <label for="initMethod">...</label>
 button_execute.click()
-driver.switch_to.alert.accept()
+if args.action == 'initialize':
+    driver.switch_to.alert.accept()
 status_element = driver.find_element_by_id('inner')
 last_text = ''
-
-time_start = time.time()
 
 while True:
     current_text = status_element.text
@@ -100,23 +102,7 @@ while True:
     last_text = current_text
     time.sleep(0.5)
 
-time_end = time.time()
-time_spent = time_end - time_start
-formatted_time_spent = helpers.format_time(time_spent)
-
-if os.getenv("REPO_DIR") is not None:
-    with open(f'{os.getenv("REPO_DIR")}/.git/HEAD', 'r') as git_head_file:
-        branch = git_head_file.read().replace('ref: refs/heads/', '').replace('\n', '')
-    with open(f'{os.getenv("REPO_DIR")}/.git/refs/heads/{branch}', 'r') as git_branch_file:
-        commit = git_branch_file.read().replace('\n', '')
-
-    current_date = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    hostname = socket.gethostname()
-    file_path = helpers.get_cache_filename_for_caller('log.gitignored')
-    with open(file_path, 'a') as log_file:
-        log_file.write(f'{current_date} [{hostname}] <{branch}:{commit[:8]}> init took: {formatted_time_spent}\n')
-
 if args.pause:
-    input('After initialisation. Press enter to exit...')
+    input(f'After {args.action}. Press enter to exit...')
 
 driver.quit()

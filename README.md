@@ -335,19 +335,24 @@ TODO
 <details><summary>TODO: Selenium scripts, needs selenium installation instructions</summary>
 
 ## Import impex with media
-Opens firefox or chrome (either with GUI or headless), logs into Backoffice/HMC
-and imports `media.impex` with `media.zip`. This allows for importing multiple
-files (like images) into Hybris.<br/>
+Opens firefox or chrome (either with GUI or headless), logs into Backoffice/HMC and imports `media.impex`
+with `media.zip`. This allows for importing multiple files (like images) into Hybris.<br/>
 Shortcut: <b>I</b>mport <b>I</b>mpex with <b>M</b>edia <b>BO/HMC</b>:
+
 ```shell
 iimbo path/to/media.impex path/to/media.zip
 iimhmc path/to/media.impex path/to/media.zip
 # TODO: test
 ```
 
-## Initialize and update
-Logs into HAC -> Platform -> Initialization/Update, optionally toggle extension or change dropdown (like "sample data" etc.) and starts the initialization/update
+## Update and initialize
+
+Logs into HAC -> Platform -> Update/Initialization, optionally toggle extension or change dropdown (like "sample data"
+etc.) and starts the update/initialization
+
 ```shell
+# update with "Include test data" set to "yes".
+yupdate "projectxpatches:Include test data:yes"
 # prepare for system initialization, but wait for enter before clicking "Initialize" button
 # so you can see if everything is selected properly.
 # Useful when you have to test if you correctly set changes in extensions.
@@ -359,12 +364,7 @@ yinit --sleep
 # prepare for system initialization and start immediately
 yinit
 # initialize with "Include test data" set to "yes".
-# "projectxpatches" is twice, because when initializing "projectxpatches" is selected, so first deselect that, and then select with additional changes.
-yinit "projectxpatches,projectxpatches:Include test data:yes"
-# update with "Include test data" set to "yes".
-# "projectxpatches" is once, because when updating "projectxpatches" is not selected, so select with additional changes.
-yupdate "projectxpatches:Include test data:yes"
-# TODO: test
+yinit "projectxpatches:Include test data:yes"
 ```
 
 </details>
