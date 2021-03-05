@@ -6,16 +6,16 @@ import os
 import re
 import sys
 
-from lib import argparse_helper
-from lib import requests_helper
+from lib import hybris_argparse_helper
 from lib import hybris_requests_helper
 from lib import logging_helper
+from lib import requests_helper
 from lib import shell_helper
 
 is_piping_text = shell_helper.is_piping_text()
 
 parser = argparse.ArgumentParser('Script for importing impex from file or text')
-argparse_helper.add_hybris_hac_arguments(parser)
+hybris_argparse_helper.add_hybris_hac_arguments(parser)
 parser.add_argument('impex', help='string with impex (use literal \\n for newline) '
                                   'OR path to impex file '
                                   'OR "-" if piping text into this script')

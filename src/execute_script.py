@@ -2,11 +2,12 @@
 import argparse
 import logging
 import re
-
 import sys
+
 from bs4 import BeautifulSoup
 
 from lib import argparse_helper
+from lib import hybris_argparse_helper
 from lib import hybris_requests_helper
 from lib import logging_helper
 from lib import requests_helper
@@ -81,7 +82,7 @@ def execute_script(script, script_type, rollback, address, user, password, sessi
 
 def _handle_cli_arguments():
     parser = argparse.ArgumentParser('Script that executes given beanshell/groovy script')
-    argparse_helper.add_hybris_hac_arguments(parser)
+    hybris_argparse_helper.add_hybris_hac_arguments(parser)
     parser.add_argument('script',
                         help='string with beanshell/groovy file '
                              'or string with script (use literal \\n for newline) '

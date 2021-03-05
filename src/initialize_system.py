@@ -11,13 +11,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 
-from lib import argparse_helper
 from lib import helpers
+from lib import hybris_argparse_helper
+from lib import hybris_selenium_helper
 from lib import logging_helper
 from lib import selenium_helper
 
 parser = argparse.ArgumentParser('Script that executes initialize hybris server')
-argparse_helper.add_hybris_hac_arguments(parser)
+hybris_argparse_helper.add_hybris_hac_arguments(parser)
 parser.add_argument('--pause', action='store_true', help='Pause before important steps')
 parser.add_argument('--sleep', action='store_true', help='Add 10s sleep before clicking update')
 parser.add_argument('--headless', action='store_true', help='Use headless browser')
@@ -32,7 +33,7 @@ args = parser.parse_args()
 driver = selenium_helper.create_firefox_webdriver(args.headless)
 
 logging.debug(f'Logging into {args.address} as {args.user}')
-selenium_helper.log_into(driver, args.address, args.user, args.password)
+hybris_selenium_helper.log_into(driver, args.address, args.user, args.password)
 
 logging.debug(f'Opening {args.address}/platform/init')
 driver.get(args.address + '/platform/init')
@@ -66,7 +67,8 @@ if args.extensions:
             # driver.find_element_by_xpath("//select[@id='idOfDropdown']/option[@value='no']").click()  # xpath
 
 if args.pause:
-    helpers.pause_with_enter_or_exit('After selecting extensions, before clicking initialize button', lambda: driver.quit())
+    helpers.pause_with_enter_or_exit('After selecting extensions, before clicking initialize button',
+                                     lambda: driver.quit())
 
 if args.sleep:
     print('After selecting extensions, before clicking initialize button, starting 10s sleep...', end='', flush=True)

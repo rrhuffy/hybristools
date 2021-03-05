@@ -8,17 +8,17 @@ import html
 import logging
 import os
 import re
-from json.decoder import JSONDecodeError
-
 import sys
 import time
+from json.decoder import JSONDecodeError
 
 import multiline_tabulate
 import unroll_pk
 from lib import argparse_helper
-from lib import requests_helper
+from lib import hybris_argparse_helper
 from lib import hybris_requests_helper
 from lib import logging_helper
+from lib import requests_helper
 from lib import shell_helper
 
 logging_helper.run_ipython_on_exception()
@@ -31,7 +31,7 @@ if os.path.exists(f'{__file__}.dat'):
         replace_dictionary = dict((key, val) for key, val in reader)
 
 parser = argparse.ArgumentParser('Script that executes given flexible search')
-argparse_helper.add_hybris_hac_arguments(parser)
+hybris_argparse_helper.add_hybris_hac_arguments(parser)
 parser.add_argument('query', help='string with flexible search or path to file with flexible search or "-" if piping')
 parser.add_argument('--parameters', '-p', nargs='*',
                     help='arguments to put into flexible query by replacing with $1, $2 etc')

@@ -8,12 +8,13 @@ import inspect
 import logging
 import os
 import re
-
 import sys
 
-from lib import argparse_helper, requests_helper
+from lib import argparse_helper
+from lib import hybris_argparse_helper
 from lib import hybris_requests_helper
 from lib import logging_helper
+from lib import requests_helper
 from lib import shell_helper
 
 # TODO: figure out how to write eg. PaymentInfo but effectively work for subtypes like InvoicePaymentInfo
@@ -239,7 +240,7 @@ if __name__ == '__main__':
             replace_dictionary = dict((key, val) for key, val in reader)
 
     parser = argparse.ArgumentParser('Script for finding info about Item with given PK')
-    argparse_helper.add_hybris_hac_arguments(parser)
+    hybris_argparse_helper.add_hybris_hac_arguments(parser)
     parser.add_argument('text', help='string with pk to unroll or "-" if piping')
     parser.add_argument('--analyse-short', '-a', action='store_true', help='Analyse PK and print short item info')
     parser.add_argument('--no-analyse', '-A', action='store_true', help='Do not analyse PK to get info about them')

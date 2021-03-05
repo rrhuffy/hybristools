@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # TODO: logging instead of print
 import argparse
-
 import time
+
 from selenium.webdriver.support.ui import WebDriverWait
 
-from lib import argparse_helper
+from lib import hybris_argparse_helper
+from lib import hybris_selenium_helper
 from lib import logging_helper
 from lib import selenium_helper
 from lib.helpers import pause_with_enter_or_exit
 
 parser = argparse.ArgumentParser('Script for importing IMPEX with media zip in HMC')
-argparse_helper.add_hybris_bo_arguments(parser)
+hybris_argparse_helper.add_hybris_bo_arguments(parser)
 logging_helper.add_logging_arguments_to_parser(parser)
 parser.add_argument('impex', type=str, help='File with impex')
 parser.add_argument('media', type=str, help='File with media')
@@ -19,7 +20,7 @@ parser.add_argument('--headless', action='store_true', help='Use headless browse
 args = parser.parse_args()
 
 driver = selenium_helper.create_firefox_webdriver(args.headless, implicit_wait_time=5)
-selenium_helper.log_into(driver, args.address, args.user, args.password)
+hybris_selenium_helper.log_into(driver, args.address, args.user, args.password)
 
 # expand "System"
 driver.find_element_by_xpath('//tr[@title="System"]').click()

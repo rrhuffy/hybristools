@@ -3,13 +3,13 @@ import argparse
 import logging
 import re
 
-from lib import argparse_helper
+from lib import hybris_argparse_helper
 from lib import hybris_requests_helper
 from lib import logging_helper
 from lib import requests_helper
 
 parser = argparse.ArgumentParser('Script that changes log4j2 logger levels')
-argparse_helper.add_hybris_hac_arguments(parser)
+hybris_argparse_helper.add_hybris_hac_arguments(parser)
 logging_helper.add_logging_arguments_to_parser(parser)
 parser.add_argument('logger', help='logger name')
 parser.add_argument('level', help='logger level', choices=['ALL', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'TRACE'])
