@@ -74,6 +74,15 @@ logallcommand() { sl root DEBUG && echo "Logger root changed to DEBUG" && $@ && 
 si() { xf $PROJECTS_DIR/hybristools/flexible/ShowItem 99999 "${@:2}" --parameters "$1"; }
 sid() { xf $PROJECTS_DIR/hybristools/flexible/ShowItemDirect 99999 "${@:2}" --parameters "$1"; }
 
+removeitem() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: removeitem Type qualifier itemToDelete"
+        return 1
+    fi
+
+    ii "REMOVE $1;$2[unique=true]\n;$3" "${@:4}";
+}
+
 removeallitems() {
     if [[ -z "$1" ]]; then
         echo "Usage: removeallitems TypeToRemoveAllItemsFrom"
