@@ -4,6 +4,7 @@ import html
 import logging
 import os
 import re
+
 import sys
 
 from lib import hybris_argparse_helper
@@ -89,6 +90,7 @@ assert impex_post_result.status_code != 500, '500 Server Runtime Exception'
 
 result_string = re.search(r'<span id="impexResult".*\s*data-result="(.+)"', impex_post_result.text).group(1)
 if 'Import has encountered problems' in result_string:
+    logging.error(result_string)
     home_dir = os.path.expanduser("~")
     path = f'{home_dir}/impexImport.result'
     with open(path, 'wt', encoding='utf-8') as file:
