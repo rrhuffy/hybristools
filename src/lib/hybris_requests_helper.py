@@ -1,9 +1,8 @@
-import getpass
 import logging
 import re
+import sys
 
 import requests
-import sys
 from keepasshttplib import keepasshttplib
 from lib import helpers
 from lib import requests_helper
@@ -63,24 +62,16 @@ def log_into_hac_and_return_csrf_or_exit(session, address, credentials=None):
 def get_credentials_from_keepass_if_empty(address, credentials):
     # if credentials aren't provided then try to get it from keepasshttplib
     logging.debug('credentials: ' + str(credentials))
-    if not credentials['password'] or not credentials['user']:
+    if not credentials['user'] or not credentials['password']:
         logging.debug(f'No credentials provided, trying to fetch them for {address}')
         try:
             requests_helper.disable_proxy()
             credentials['user'], credentials['password'] = keepasshttplib_client.get_credentials(address)
         except (IndexError, TypeError):
             logging.error(f'Cannot find credentials for {address}')
+            sys.exit(1)
         finally:
             requests_helper.enable_proxy()
-    assert credentials['user'], 'You must provide an user!'
-    # if couldn't find password then ask for it
-    if not credentials['password']:
-        credentials['password'] = getpass.getpass('password:')
-        # getpass is leaving empty line, so move terminal cursor one line up after using it
-        # print(shell_helper.get_move_up(1), end='')
-        # TODO: https://stackoverflow.com/questions/23539184/after-starting-process-how-to-get-parents-pid-in-the-child
-        # if everywhere in caller's path there is expect_keepass.py then do not move cursor
-    assert credentials['password'], 'You must provide an password!'
 
 
 def _internal_log_in(address, credentials, session, address_to_cookies_map):
