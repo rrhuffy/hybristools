@@ -8,6 +8,7 @@ import inspect
 import logging
 import os
 import re
+
 import sys
 
 from lib import argparse_helper
@@ -281,7 +282,7 @@ if __name__ == '__main__':
         # TODO: allow two fields per type in dictionary to for example pick 2 values from {Address}
 
         # get all 13 digit numbers (except current 'PK' column), because they may be a PK of something
-        item_pk_set = {match for match in re.findall(r'(?<!pk\036)\d{13}', text)}
+        item_pk_set = {match for match in re.findall(r'(?<!pk\036)\d{13}', text, re.IGNORECASE)}
         logging.debug(f'item_pk_set = {item_pk_set}')
         if item_pk_set:
             _key_to_string = get_key_replacements(item_pk_set, session, csrf_token, address, not args.analyse_short,

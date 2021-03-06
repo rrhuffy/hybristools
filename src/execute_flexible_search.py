@@ -8,9 +8,10 @@ import html
 import logging
 import os
 import re
+from json.decoder import JSONDecodeError
+
 import sys
 import time
-from json.decoder import JSONDecodeError
 
 import multiline_tabulate
 import unroll_pk
@@ -169,7 +170,7 @@ def run():
                         for column_index, column in enumerate(row):
                             for key, replace_string in key_to_string:
                                 # if column isn't empty AND (at least part of) key is in column AND this is not PK col
-                                if column is not None and key in column and header_and_data[0][column_index] != 'PK':
+                                if column is not None and key in column and header_and_data[0][column_index].lower() != 'PK'.lower():
                                     row[column_index] = row[column_index].replace(key, replace_string)
                                     logging.debug(f'replacing {key} -> {replace_string}')
 
@@ -197,7 +198,7 @@ def get_pk_set_from_header_and_data(header_and_data_):
     item_pk_set = set()
     for row_index, row in enumerate(header_and_data_):
         for col_index, column in enumerate(row):
-            if header_and_data_[0][col_index] == 'PK':  # ignore data from 'PK' column
+            if header_and_data_[0][col_index].lower() == 'PK'.lower():  # ignore data from 'PK' column
                 continue
 
             if column and (args.ignore_columns is None or column not in args.ignore_columns):
