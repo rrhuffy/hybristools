@@ -1,0 +1,12 @@
+select {p.code}, {cc.code}, {ca.code}, {pf.pk} as pf, {pf.stringValue}
+from {
+    ProductFeature as pf
+    join Product as p on {p.pk} = {pf.product}
+    join CatalogVersion as cv on {cv.pk} = {p.catalogVersion}
+    join Catalog as c on {c.pk} = {cv.catalog}
+    join ClassAttributeAssignment as caa on {caa.pk} = {pf.classificationAttributeAssignment}
+    join ClassificationAttribute as ca on {ca.pk} = {caa.classificationAttribute}
+    join ClassificationClass as cc on {cc.pk} = {caa.classificationClass}
+    join ClassificationSystemVersion as csv on {csv.pk} = {caa.systemVersion} and {csv.pk} = {ca.systemVersion} and {csv.pk} = {cc.catalogversion}
+    join ClassificationSystem as cs on {cs.pk} = {csv.catalog} and {cs.pk} = {cc.catalog}
+}

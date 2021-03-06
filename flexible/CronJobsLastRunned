@@ -1,0 +1,6 @@
+select {code}, {job}, {startTime}, {endTime}-{startTime} as duration, {endTime}, {result}, {nodeId}
+from {CronJob}
+where 
+    {active} = 1
+    and DATEDIFF(NOW(), {endTime}) < 2
+order by {endTime} desc

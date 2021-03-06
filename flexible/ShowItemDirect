@@ -4,7 +4,7 @@ select distinct * from
         ({{
             select {code} from {Type} where {pk}=
             ({{
-                select SUBSTRING_INDEX(TRIM(',' FROM InheritancePathString), ',', 1) FROM {attributedescriptor} WHERE {pk}={ad.pk}
+                select SUBSTRING_INDEX(TRIM(',' FROM InheritancePathString), ',', 1) FROM {attributedescriptor} where {pk}={ad.pk}
             }})
         }}) as firstType,
         {ad.qualifier} as qualifier,
@@ -24,9 +24,9 @@ select distinct * from
         end as C
     from
     {
-        AttributeDescriptor AS ad
-        JOIN Type AS t ON {ad.EnclosingType} = {t.PK}
-        JOIN Type AS fieldType ON {ad.attributeType} = {fieldType.PK}
+        AttributeDescriptor as ad
+        join Type as t on {ad.EnclosingType} = {t.PK}
+        join Type as fieldType on {ad.attributeType} = {fieldType.PK}
     }
     where
     (

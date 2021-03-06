@@ -1,0 +1,26 @@
+select
+    {o.creationTime} as created,
+    {os.code} as status,
+    {o.code} as orderCode,
+    {pm.code} as payment,
+    {op.code} as orderProcessCode,
+    {op.endMessage} as opEndMsg,
+    {ps.code} as opStatus,
+    {pt.action} as opAction,
+    {ptl.actionId} as ptlActionId,
+    {ptl.returnCode} as ptlRetCode,
+    {ptl.logMessages} as ptlLogMessages
+from {
+    Order as o
+    left join OrderProcess as op on {op.order} = {o.pk}
+    left join PaymentMode as pm on {pm.pk} = {o.paymentMode}
+    left join OrderStatus as os on {o.status} = {os.pk}
+    left join ProcessState as ps on {op.state} = {ps.pk}
+    left join ProcessTask as pt on {op.pk} = {pt.process}
+    left join ProcessTaskLog as ptl on {op.pk} = {ptl.process}
+}
+where {o.creationTime} > '2018-11-20 13'
+order by 
+    {o.creationTime},
+    {op.code},
+    {ptl.startDate}

@@ -1,0 +1,84 @@
+select
+    {ao.pk} as pk,
+    {ao.modifiedTime} as modified,
+    {ct.code} as type,
+    {u.uid} as userUid,
+    {ao.code} as orderCode,
+
+    case {ct.code}
+        when 'Order' then {o.versionID}
+        when 'Quote' then {q.version}
+    end as version,
+
+    {os.code} as orderStatus,
+
+    case {ct.code}
+        when 'Cart' then TRUNCATE({ce.entryNumber}, 2)
+        when 'Order' then TRUNCATE({oe.entryNumber}, 2)
+        when 'Quote' then TRUNCATE({qe.entryNumber}, 2)
+    end as eN,
+
+    case {ct.code}
+        when 'Cart' then {cep.code}
+        when 'Order' then {oep.code}
+        when 'Quote' then {qep.code}
+    end as productCode,
+
+    case {ct.code}
+        when 'Cart' then TRUNCATE({ce.basePrice}, 2)
+        when 'Order' then TRUNCATE({oe.basePrice}, 2)
+        when 'Quote' then TRUNCATE({qe.basePrice}, 2)
+    end as basePrice,
+
+    case {ct.code}
+        when 'Cart' then TRUNCATE({ce.quantity}, 0)
+        when 'Order' then TRUNCATE({oe.quantity}, 0)
+        when 'Quote' then TRUNCATE({qe.quantity}, 0)
+    end as quantity,
+
+    case {ct.code}
+        when 'Cart' then {ce.discountValuesInternal}
+        when 'Order' then {oe.discountValuesInternal}
+        when 'Quote' then {qe.discountValuesInternal}
+    end as discountValues,
+
+    case {ct.code}
+        when 'Cart' then TRUNCATE({ce.totalPrice}, 2)
+        when 'Order' then TRUNCATE({oe.totalPrice}, 2)
+        when 'Quote' then TRUNCATE({qe.totalPrice}, 2)
+    end as totalPrice,
+
+    case {ct.code}
+        when 'Cart' then {ce.costCenter}
+        when 'Order' then {oe.costCenter}
+        when 'Quote' then {qe.costCenter}
+    end as costCenter,
+
+    case {ct.code}
+        when 'Cart' then {ce.pk}
+        when 'Order' then {oe.pk}
+        when 'Quote' then {qe.pk}
+    end as entryPK
+from {
+    AbstractOrder as ao
+    join ComposedType as ct on {ct.pk} = {ao.itemtype}
+    join User as u on {ao.user} = {u.pk}
+    left join OrderStatus as os on {ao.status} = {os.pk}
+    left join OrderEntry as oe on {oe.order} = {ao.pk}
+    left join CartEntry as ce on {ce.order} = {ao.pk}
+    left join QuoteEntry as qe on {qe.order} = {ao.pk}
+    left join Order as o on {oe.order} = {o.pk}
+    left join Cart as c on {ce.order} = {c.pk}
+    left join Quote as q on {qe.order} = {q.pk}
+    left join Product as oep on {oe.product} = {oep.pk}
+    left join Product as cep on {ce.product} = {cep.pk}
+    left join Product as qep on {qe.product} = {qep.pk}
+}
+where
+    {ao.creationTime} > '2018-08-01'
+order by
+    orderCode desc,
+    version,
+    orderStatus,
+    eN,
+    productCode

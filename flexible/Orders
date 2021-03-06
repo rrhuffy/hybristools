@@ -1,0 +1,21 @@
+select 
+    {o.creationTime} as createdTime,
+    {o.code} as orderCode,
+    {os.code} as orderStatus,
+    {s.uid} as store,
+    {dm.code} as deliveryMode,
+    {pm.code} as paymentMode,
+    {ps.code} as paymentStatus
+from {
+    Order as o
+    left join OrderStatus as os on {o.status} = {os.pk}
+    join BaseStore as s on {o.store} = {s.pk}
+    left join DeliveryMode as dm on {dm.pk} = {o.deliveryMode}
+    left join PaymentMode as pm on {pm.pk} = {o.paymentMode}
+    left join PaymentStatus as ps on {ps.pk} = {o.paymentStatus}
+}
+where
+    {o.creationTime} > '2018-06-01'
+order by
+    {o.creationTime},
+    {o.code}

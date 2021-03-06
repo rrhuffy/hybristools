@@ -1,0 +1,13 @@
+select {p.ean} as EAN, count({p.code}) as count, GROUP_CONCAT({p.code}) as productCodes
+from {
+    Product as p
+    join Catalog as c on {p.catalog} = {c.pk}
+    join CatalogVersion as cv on {p.catalogVersion} = {cv.pk}
+} 
+where 
+    {cv.version} = 'Online'
+    and {ean} is not null
+    and {ean} != ' '
+group by {p.ean}
+having count({p.code})>1
+order by count({p.code}) desc

@@ -1,0 +1,36 @@
+select 
+    {o.creationTime} as createdTime,
+    {ct.code} as type,
+    {o.code} as orderCode,
+    {os.code} as orderStatus,
+    {s.uid} as store,
+    {pm.code} as pMode,
+    {ps.code} as pStatus,
+    {ptea.creationTime} as pCreatedA,
+    {ptta.code} as pteTypeA,
+    {ptec.creationTime} as pCreatedC,
+    {pttc.code} as pteTypeC,
+    CAST(TIMEDIFF({ptec.creationTime}, {ptea.creationTime}) as CHAR) as diffAuthVsCapture,
+    TIME_TO_SEC(TIMEDIFF({ptec.creationTime}, {ptea.creationTime})) < 5 as below5s
+from {
+    Order as o
+    join ComposedType as ct on {ct.pk} = {o.itemtype}
+    left join OrderStatus as os on {o.status} = {os.pk}
+    join BaseStore as s on {o.store} = {s.pk}
+    left join PaymentMode as pm on {pm.pk} = {o.paymentMode}
+    left join PaymentStatus as ps on {ps.pk} = {o.paymentStatus}
+    left join PaymentTransaction as pt on {pt.order} = {o.pk}
+    left join PaymentTransactionEntry as ptea on {ptea.paymentTransaction} = {pt.pk}
+    left join PaymentTransactionType as ptta on {ptta.pk} = {ptea.type}
+    left join PaymentTransactionEntry as ptec on {ptec.paymentTransaction} = {pt.pk}
+    left join PaymentTransactionType as pttc on {pttc.pk} = {ptec.type}
+}
+where
+    {ps.code} = 'PAID'
+    and {ptta.code} = 'AUTHORIZATION'
+    and {pttc.code} = 'CAPTURE'
+    and {ptea.transactionStatus} = 'ACCEPTED'
+    and {ptec.transactionStatus} = 'ACCEPTED'
+
+order by {o.creationTime}
+ -- and TIME_TO_SEC(TIMEDIFF({ptec.creationTime}, {ptea.creationTime})) > 5

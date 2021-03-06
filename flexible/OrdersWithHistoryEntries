@@ -1,0 +1,14 @@
+select 
+    {o.creationTime} as orderCreation,
+    {o.code} as orderCode,
+    {pm.code} as pMode,
+    {os.code} as orderStatus,
+    {ohe.creationTime} as historyEntryCreated,
+    {ohe.description} as historyEntryDescription
+from {
+    Order as o
+    left join OrderHistoryEntry as ohe on {ohe.order} = {o.pk}
+    left join OrderStatus as os on {o.status} = {os.pk}
+    left join PaymentMode as pm on {pm.pk} = {o.paymentMode}
+}
+order by {o.code}, {ohe.creationTime}

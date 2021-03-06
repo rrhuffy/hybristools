@@ -1,0 +1,14 @@
+select
+    {c.uid} as uid,
+    {c.customerID} as customerID,
+    STRING_AGG({p.uid},';') as userGroups
+from {
+    B2BCustomer as c
+    join PrincipalGroupRelation as pgr on {c.pk}={pgr.source}
+    join Principal as p on {pgr.target}={p.pk}
+}
+group by
+    {c.uid},
+    {c.customerID}
+order by
+    {c.uid}

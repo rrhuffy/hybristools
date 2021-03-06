@@ -1,0 +1,33 @@
+select 
+    {o.creationTime} as created,
+    {ct.code} as type,
+    {u.uid} as userUid,
+    {o.code} as oCode,
+    {os.code} as oStatus,
+    {c.creationTime} as consCreated,
+    {c.code} as consignmentCode,
+    {c.trackingId} as trackingId,
+    {cs.code} as cStatus,
+    {oe.entryNumber} as LN,
+    {ce.quantity} as R,
+    {ce.shippedQuantity} as S,
+    {p.code} as productCode,
+    {p.ean} as ean,
+    {p.name[en]} as productName
+from {
+    Order as o
+    join ComposedType as ct on {ct.pk} = {o.itemtype}
+    join User as u on {o.user} = {u.pk}
+    join OrderStatus as os on {o.status} = {os.pk}
+    left join Consignment as c on {c.order} = {o.pk}
+    left join ConsignmentStatus as cs on {c.status} = {cs.pk}
+    left join ConsignmentEntry as ce on {ce.consignment} = {c.pk}
+    left join OrderEntry as oe on {ce.orderEntry} = {oe.pk}
+    left join Product as p on {oe.product} = {p.pk}
+}
+where
+    {o.creationTime} > '2018-05-18'
+    and {os.code} = 'COMPLETED'
+order by
+    {o.code} desc,
+    {oe.entryNumber}

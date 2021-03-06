@@ -1,0 +1,18 @@
+select
+    {bs.uid} as store,
+    {zdm.code} as zoneDeliveryMode,
+    {zdm.name[en]} as zdmNameEn,
+    {zdm.description[en]} as zdmDescriptionEn,
+    {z.code} as zone,
+    {zdmv.value} as value,
+    {zdmv.minimum} as minimum,
+    {zdmv.currency} as currency
+from {
+    ZoneDeliveryModeValue as zdmv
+    join ZoneDeliveryMode as zdm on {zdmv.deliveryMode}={zdm.pk}
+    join BaseStore2DeliveryModeRel as s2d on {zdmv.deliveryMode}={s2d.target}
+    join BaseStore as bs on {s2d.source} = {bs.pk}
+    join Zone as z on {zdmv.zone} = {z.pk}
+}
+where {zdm.active} = 1
+order by store, zoneDeliveryMode
