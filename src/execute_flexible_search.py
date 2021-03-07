@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TODO: move code from top level to main() function and add overriding by pysnooper when -vv provided
+
 # TODO: extract removing empty columns (without checking first row == column name) into a separate script
 import argparse
 import ast

@@ -13,6 +13,8 @@ from lib import logging_helper
 from lib import requests_helper
 from lib import shell_helper
 
+# TODO: add --threads parameter with 1 as a default value
+
 is_piping_text = shell_helper.is_piping_text()
 
 parser = argparse.ArgumentParser('Script for importing impex from file or text')
@@ -44,7 +46,7 @@ if is_using_file_with_impex:
 
     with open(args.impex, 'rb') as file:
         files = {'file': file,
-                 'maxThreads': (None, '2'),
+                 'maxThreads': (None, '1'),
                  'enableCodeExecution': (None, 'on'),
                  'legacyMode': (None, 'off'),
                  'validationEnum': (None, 'IMPORT_STRICT'),
