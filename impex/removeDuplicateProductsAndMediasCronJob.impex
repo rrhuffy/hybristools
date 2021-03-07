@@ -1,0 +1,56 @@
+# example impex importing a groovy script and setting it to run every 30 minutes, all without any server restarts needed
+# used on old project with version 5.5, where we were having duplicate products and medias in Online catalog
+
+INSERT_UPDATE Script; code[unique = true]; scriptType(code); active[unique = true]; content
+                    ; removeDuplicates   ; GROOVY          ; true                 ; "def findProductWithSameCode() {
+    query = ''' select MIN({p.pk}) as pks
+    from {
+        Product as p
+        JOIN CatalogVersion as CV on {p.catalogVersion}={CV:PK} and {CV:version} = 'Online'
+        JOIN Catalog as C on {CV:catalog}={C:PK} and {C:id}='projectProductCatalog'
+    }
+    group by {p:code}
+    having count(*) > 1
+    ''';
+    flexibleSearchService.search(query).result;
+}
+
+def findMediaWithSameCode() {
+    query = ''' select MIN({m.pk}) as pks
+    from {
+        Media as m
+        JOIN CatalogVersion as CV on {m.catalogVersion}={CV:PK} and {CV:version} = 'Online'
+        JOIN Catalog as C on {CV:catalog}={C:PK} and {C:id}='projectProductCatalog'
+    }
+    group by {m:code}
+    having count(*) > 1
+    ''';
+    flexibleSearchService.search(query).result;
+}
+
+allProductDuplicates = findProductWithSameCode()
+allMediaDuplicates = findMediaWithSameCode()
+
+iteration = 1
+while (allProductDuplicates.size() > 0) {
+    println ""Product cleaning iteration: $iteration""
+    modelService.removeAll(allProductDuplicates)
+    allProductDuplicates = findProductWithSameCode()
+}
+
+iteration = 1
+while (allMediaDuplicates.size() > 0) {
+    println ""Media cleaning iteration: $iteration""
+    modelService.removeAll(allMediaDuplicates)
+    allMediaDuplicates = findMediaWithSameCode()
+}
+"
+
+INSERT_UPDATE ScriptingJob; code[unique = true] ; scriptURI
+                          ; removeDuplicatesJob ; model://removeDuplicates
+
+INSERT_UPDATE CronJob; code[unique = true]     ; job(code)           ; singleExecutable; sessionLanguage(isocode); logToFile
+                     ; removeDuplicatesCronJob ; removeDuplicatesJob ; false           ; en                      ; false
+
+INSERT_UPDATE Trigger; cronjob(code)[unique = true]; active; cronExpression
+                     ; removeDuplicatesCronJob     ; true  ; 0 */30 * * * ? *

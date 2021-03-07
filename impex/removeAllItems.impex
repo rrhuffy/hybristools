@@ -1,0 +1,3 @@
+# example impex to remove all items of given type (replace both "ItemTypeWithoutModelAtEnd" to type you want to remove)
+REMOVE ItemTypeWithoutModelAtEnd[batchmode=true];itemType(code)[unique=true];
+;ItemTypeWithoutModelAtEnd;

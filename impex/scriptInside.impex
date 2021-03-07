@@ -1,0 +1,9 @@
+"#%
+// example of groovy script executed from impex, this requires 'Enable code execution' to be selected in HAC
+import de.hybris.platform.servicelayer.search.FlexibleSearchQuery;
+flexibleSearchService = Registry.getApplicationContext().getBean(""flexibleSearchService"");
+query = ""SELECT {pk} FROM {Customer}"";
+flexibleSearchQuery = new FlexibleSearchQuery(query);
+result = flexibleSearchService.search(flexibleSearchQuery).getResult();
+System.out.println(result.get(0).getUid());
+"
