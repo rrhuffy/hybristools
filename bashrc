@@ -45,11 +45,12 @@ xfa() { xf "Select * from {$1}" "${@:2}"; }
 xfaw() { xf "Select * from {$1} where {$2} = '$3'" "${@:4}"; }
 xfawl() { xf "Select * from {$1} where {$2} like '$3'" "${@:4}"; }
 xfawr() { xf "Select * from {$1} where {$2} regexp '$3'" "${@:4}"; }
+xfs()  { xf "Select {$1} from {$2}" "${@:3}"; }
 solrgetindexes() { xf --data "select {name} from {SolrFacetSearchConfig}"; }
 checkpatchexecutionstatus() { xf "select {patchid},{executiontime},{executionstatus} from {PatchExecution} where {rerunnable}=0 order by {executiontime} desc" $@; }
 
 # show all known data about Item: types inheritance, all fields with relations and 20 example items
-all() { types "$1" && showitem "$1" && xfa "$1" 20; }
+all() { types "$1" && sid "$1" && xfa "$1" 20; }
 
 solrfullindex() { xg "indexerService.performFullIndex(facetSearchConfigService.getConfiguration('${1:-${PROJECT_PREFIX_LONG_LOWERCASE}Index}'))" "${@:2}"; }
 solrupdate() { xg "indexerService.updateIndex(facetSearchConfigService.getConfiguration('${1:-${PROJECT_PREFIX_LONG_LOWERCASE}Index}'))" "${@:2}"; }
