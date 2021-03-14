@@ -1,23 +1,19 @@
 /*
-to print list of all contexts:
-xg $PROJECTS_DIR/hybristools/groovy/getBeanFromContext.groovy
-to print list of all beans in given context:
-xg $PROJECTS_DIR/hybristools/groovy/getBeanFromContext.groovy --parameters backoffice
-to find bean in given context and print its fields and methods:
-xg $PROJECTS_DIR/hybristools/groovy/getBeanFromContext.groovy --parameters backoffice backofficeLocaleService
+to print all request mappings in given context:
+xg $PROJECTS_DIR/hybristools/groovy/getRequestMappings.groovy --parameters yourStorefrontContextName | multiline_tabulate -
 */
 import org.springframework.web.context.ContextLoader
 import org.springframework.web.context.WebApplicationContext
 
 contextName = '''$1'''
-beanName = '''$2'''
+beanName = "org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"
 
 field = ContextLoader.getDeclaredField("currentContextPerThread")
 field.setAccessible(true)
 classLoaderToWebApplicationContextMap = field.get(de.hybris.platform.spring.HybrisContextLoaderListener)
 
-if (contextName.equals('$' + "1") && beanName.equals('$' + "2")) {
-    println "You must provide 2 arguments: contextName and beanName, printing all contexts:"
+if (contextName.equals('$' + "1")) {
+    println "You must provide 1 argument: contextName, printing all contexts:"
     classLoaderToWebApplicationContextMap.each { println it.key.getContextName() }
     return
 }
@@ -29,10 +25,8 @@ if (context == null) {
 } else {
     try {
         bean = context.getBean(beanName)
-        println "Found $beanName:\n$bean\n\nFields:"
-        bean.properties.each { println "$it.key -> $it.value" }
-        println "\nMethods:"
-        bean.metaClass.methods*.name.sort().unique().each { println it }
+        println "Pattern\tMethods\tController\tMethod"
+        bean.handlerMethods.each { println "${it.key.patternsCondition}\t${it.key.methodsCondition}\t${it.value.beanType.simpleName}\t${it.value.method.name}" }
     } catch (org.springframework.beans.factory.NoSuchBeanDefinitionException exc) {
         println "Cannot find bean $beanName, printing all beans' names in context $contextName:"
         context.beanFactory.beanDefinitionNames.each { println it }

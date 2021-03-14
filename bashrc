@@ -64,6 +64,14 @@ runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1')
 synchronizeproductcatalog() { xg $PROJECTS_DIR/hybristools/groovy/synchronizeCatalog.groovy --parameters $PROJECT_PREFIX_LONG_LOWERCASE Product; }
 synchronizecontentcatalog() { xg $PROJECTS_DIR/hybristools/groovy/synchronizeCatalog.groovy --parameters $PROJECT_PREFIX_LONG_LOWERCASE Content; }
 setparametertemporary() { xg "de.hybris.platform.util.Config.setParameter('$1','$2');"; }
+setparametertemporarywithequals() {
+    pattern='^(.+)\s*=\s*(.+)$'
+    if [[ "$1" =~ $pattern ]]; then
+        xg "de.hybris.platform.util.Config.setParameter('${BASH_REMATCH[1]}','${BASH_REMATCH[2]}');";
+    else
+        echo "Cannot find pattern: $pattern"
+    fi
+}
 getparameter() { xg "de.hybris.platform.util.Config.getParameter('$1')"; }
 types() { xgr $PROJECTS_DIR/hybristools/groovy/types.groovy "${@:2}" --parameters "$1" | treepywithoutcolor; }
 typesin() { xgr $PROJECTS_DIR/hybristools/groovy/typesin.groovy "${@:2}" --parameters "$1" | treepywithoutcolor; }
@@ -74,6 +82,8 @@ logallcommand() { sl root DEBUG && echo "Logger root changed to DEBUG" && $@ && 
 
 si() { xf $PROJECTS_DIR/hybristools/flexible/ShowItem 99999 "${@:2}" --parameters "$1"; }
 sid() { xf $PROJECTS_DIR/hybristools/flexible/ShowItemDirect 99999 "${@:2}" --parameters "$1"; }
+
+yf() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | multiline_tabulate - -T "${@:2}"; }
 
 removeitem() {
     if [[ -z "$1" ]]; then
