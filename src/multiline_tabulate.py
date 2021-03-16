@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TODO: --group in multiline_tabulate to compare items in collections regardless of order
+
 # TODO: add counter for entries, so we'll see how many entries are there
 # TODO: extract common only if lines_per_entry_unextracted > lines_per_entry_extracted
 
@@ -260,6 +262,7 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
     :param data: print only data, without header
     :return: string with tabulated output
     """
+    # TODO: if width=0 (or if piping output?) then assume infinite width
     terminal_width = width or shell_helper.get_terminal_width()
     logging.debug(f'terminal width: {terminal_width}')
     logging.debug(f'terminal height: {limit_entries}')
@@ -356,6 +359,13 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
         for i in range(columns_in_rows[0]):
             column_value = header_and_data_as_strings[1][i]
             column_name = header_and_data_as_strings[0][i]
+
+            # TODO: if there is output like this
+            # collection1 | collection2
+            # [1,2,3]     | [7,8,9]
+            # [2,3,1]     | [8,9,7]
+            # [3,2,1]     | [9,8,7]
+            # Then they should be treated as equal, letting compareItemStagedAndOnline.groovy work as intended
 
             if all(single_line[i] == column_value for single_line in header_and_data_as_strings[2:]):
                 logging.debug(f'{column_name}: {column_value} is the same everywhere, removing...')

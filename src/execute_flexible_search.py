@@ -12,6 +12,7 @@ import os
 import re
 from json.decoder import JSONDecodeError
 
+import requests
 import sys
 import time
 
@@ -93,15 +94,19 @@ def execute_flexible_search(session, url, query, csrf, max_count=100, user='admi
 def run():
     logging.debug('Executing...')
     url_to_execute = address + '/console/flexsearch/execute'
-    flex_post_result = execute_flexible_search(session=session,
-                                               url=url_to_execute,
-                                               query=flexible_query,
-                                               csrf=csrf_token,
-                                               max_count=args.limit,
-                                               user=credentials['user'])
+    try:
+        flex_post_result = execute_flexible_search(session=session,
+                                                   url=url_to_execute,
+                                                   query=flexible_query,
+                                                   csrf=csrf_token,
+                                                   max_count=args.limit,
+                                                   user=credentials['user'])
+    except requests.exceptions.ChunkedEncodingError as exc:
+        return f'Caught: {exc}'
     logging.debug('Printing results:')
     if flex_post_result.status_code == 500:
-        return f'HTTP500: {flex_post_result.text}'
+        logging.debug(f'HTTP500: {flex_post_result.text}')
+        return 'Received HTTP500 error. To print HTML use -v'
     try:
         result_json = flex_post_result.json()
     except JSONDecodeError as exc:

@@ -26,7 +26,7 @@ select distinct * from
     from
     {
         AttributeDescriptor as ad
-        join Type as t on {ad.EnclosingType} = {t.PK}
+        join Type as t on {ad.enclosingType} = {t.PK}
         join Type as fieldType on {ad.attributeType} = {fieldType.PK}
     }
     where

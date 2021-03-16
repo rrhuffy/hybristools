@@ -34,7 +34,7 @@ For installation instructions go to [INSTALL.md](https://github.com/rrhuffy/hybr
 Execute script
 ==
 Execute script in HAC -> Console -> Scripting Languages (with selected commit or rollback mode) and return output.
-Be aware that some loadbalancers have set request timeout to 60s, so you won't see results output if your script needs more than 1 minute to execute (but it will execute normally).
+Be aware that some loadbalancers have set request timeout to 60s, so you won't see results output if your script needs more than 1 minute to execute (but it will execute normally). In these situations you may need to use `System.out.println`/`Logger` to have script output in logs
 
 Because I'm using it mostly to execute groovy scripts, I'm using bash functions to call it with groovy as a second parameter. Now I can run things with rollback mode (`xgr`) or with commit mode (`xg`) like this:
 
@@ -108,8 +108,12 @@ xf "select {pk}, {uid}, {name}, {description}, {passwordEncoding} from {User}" 5
 ------------------------------5------------------------------
 1 8796093186052|cmseditor    |CMS Editor                  | 1
 2 CMS Editor                  |pbkdf2                       2
-
 ```
+
+You can also use excel if you export a TSV (Tab separated values) file:
+
+`xf "select {pk}, {uid}, {name}, {description}, {passwordEncoding} from {User}" 5 --pager= > output.tsv`
+
 Check all options and defaults like transposing table when there is only one result by executing:
 ```shell
 multiline_tabulate --help
@@ -292,7 +296,7 @@ Item
 
 Show all fields in given Type
 ==
-Works in MySQL, because of `SUBSTRING_INDEX`. SAP Cloud is in TODO
+Works in MySQL, because of `SUBSTRING_INDEX`. SAP Cloud is in TODO probably because of used `SUBSTRING_INDEX` or `TRIM` which may be MySQL specific
 
 Show all fields directly accessible from given Type (`sid`)
 
@@ -329,7 +333,10 @@ AbstractMedia | mime                | java.lang.String                         |
 AbstractMedia | realFileName        | java.lang.String                         | core      | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 AbstractMedia | size                | java.lang.Long                           | core      | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 ```
-Show all fields in given Type with all Items referencing it (`si`)
+Show all fields in given Type with (almost) all Items referencing it (`si`).
+
+For example: If you are looking what uses `CMSLinkComponent` you my not find everything, because `CMSNavigationEntry` has `item` of type `Item` and it can be attached there. 
+Below is example of `Media` fields, with all Items referencing it: 
 <details><summary>Long output, click here to unroll</summary>
 
 ```
@@ -686,7 +693,7 @@ SavedCartFileUploadProcess      | SavedCartFileUploadProcess                  | 
 
 TODO
 ==
-
+- example output/usage for files from `flexible`, `groovy` and `impex` folders
 - ShowItem and ShowItemDirect working with SAP Cloud (instead of only MySQL like now)
 - selenium scripts (already written, need only selenium installation instructions)
 

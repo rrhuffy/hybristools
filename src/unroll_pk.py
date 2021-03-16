@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
+# TODO: HANA and Azure SQL crashes when doing UNION ALL on different columns, fix that so unroll_pk can be used in cloud
+
 # TODO: separate PK -> [Type](field)value and provide extractPk command
+
+# TODO: BUG: when analyse#0 returns some pk it is also unwrapped...even if it is a "pk"
 
 import argparse
 import csv
@@ -164,7 +168,7 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
 
                         type_pk_to_qualifier_dict[type_pk] = qualifier
 
-                # TODO: HANA crashes when unioning different columns, where MySQL works...
+                # TODO: HANA and Azure SQL crashes when doing UNION ALL on different columns, where MySQL works...
                 # TODO: Group by type_name and execute multiple statements, one per type (with multiple PK per type)
                 # TODO 2: Before changes do a refactor to simplify executing FS
                 # This is working on Mysql (b2bdevweb01)
@@ -178,7 +182,6 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
                         if type_pk in type_pk_to_type_name_dict:
                             type_name = type_pk_to_type_name_dict[type_pk]
                         qualifier = type_pk_to_qualifier_dict[type_pk]
-                        # TODO: use string.format here, ATM it is using more or less local/global variable
                         last_frame = inspect.currentframe()
                         _globals = last_frame.f_globals
                         _locals = last_frame.f_locals
