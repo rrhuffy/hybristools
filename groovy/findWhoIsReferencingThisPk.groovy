@@ -2,7 +2,11 @@
 xg $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters 8796093057183 | multiline_tabulate -
 while inotifywait -qe modify "$PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy"; do echo && xg $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters 8796093057183 | multiline_tabulate -; done;
 
+WARNING: Do NOT run that on production server, because jalo/dynamic handler is slow, especially when you have huge database
+
 TODO: set proper ordering of results (show SimpleBannerComponent before AbstractBannerComponent results), then hide duplicated PKs (using specialized class for output and discarding general ones)
+
+TODO: split into query generation and execution parts, then print completion percentage
 
 Works with:
 normal fields
@@ -89,6 +93,7 @@ echo "Expecting: " && xf "select {pk} from {RendererTemplate} where {code}='Defa
 */
 
 DEBUG = 0
+PRINT_TO_LOGS = 0
 TYPE_BLACKLIST = ["ItemSyncTimestamp", "ModifiedCatalogItemsView", "ItemTargetVersionView", "ItemSourceVersionView"] as Set
 
 pkToSearchAsString = '''$1'''
@@ -99,8 +104,18 @@ if (pkToSearchAsString.equals('$' + '1')) {
 
 def debug(message) {
     if (DEBUG) {
-        println message
+        println "DEBUG: $message"
     }
+    if (PRINT_TO_LOGS) {
+        org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info("DEBUG: $message")
+    }
+}
+
+def info(message) {
+    if (PRINT_TO_LOGS) {
+        org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info(message)
+    }
+    println message
 }
 
 pkToSearchAsPK = new de.hybris.platform.core.PK(Long.parseLong(pkToSearchAsString))
@@ -198,7 +213,7 @@ allTypesToSearch.each { currentlySearchedType ->
                 } else if (qualifier.equals("target")) {
                     qualifierToUse = "source"
                 } else {
-                    println "ERROR: type: $type, code: $code, qualifier: $qualifier, it's RelationMetaType or Link but it is not using either source nor target"
+                    info "ERROR: type: $type, code: $code, qualifier: $qualifier, it's RelationMetaType or Link but it is not using either source nor target"
                     return
                 }
             } else {
@@ -352,9 +367,9 @@ allTypesToSearch.each { currentlySearchedType ->
 }
 
 if (resultsToPrint) {
-    println "Type\tpk\tqualifier\tsearchedPk"
+    info "Type\tpk\tqualifier\tsearchedPk"
     resultsToPrint.each {
-        println it
+        info it
     }
 }
 

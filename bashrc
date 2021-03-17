@@ -83,7 +83,7 @@ logallcommand() { sl root DEBUG && echo "Logger root changed to DEBUG" && $@ && 
 si() { xf $PROJECTS_DIR/hybristools/flexible/ShowItem 99999 "${@:2}" --parameters "$1"; }
 sid() { xf $PROJECTS_DIR/hybristools/flexible/ShowItemDirect 99999 "${@:2}" --parameters "$1"; }
 
-yf() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | multiline_tabulate - -T "${@:2}"; }
+yf() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | debuginfowarnerrortostderr | multiline_tabulate - -T "${@:2}"; }
 
 removeitem() {
     if [[ -z "$1" ]]; then
@@ -146,6 +146,7 @@ sedcleanhybrislogwithdate() { sed -E "s/([^|]+\|){3} .{11}//"; }
 # for VIM:          :%s/^\([^|]\+|\)\{3\} .\{26\}//
 sedcleanhybrislogwithdateandtime() { sed -E "s/([^|]+\|){3} .{26}//"; }
 
+# pipe DEBUG|INFO|WARN|ERROR to stderr, so it won't be picked by multiline_tabulate causing errors
 # TODO: maybe just ignore DEBUG|INFO|WARN|ERROR inside multiline_tabulate, because it is used exclusively for that?
 debuginfowarnerrortostderr() { pee 'grep -P "(DEBUG|INFO|WARN|ERROR):" 1>/dev/stderr' 'grep -P -v "(DEBUG|INFO|WARN|ERROR):"'; }
 

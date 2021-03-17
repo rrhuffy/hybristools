@@ -34,7 +34,7 @@ For installation instructions go to [INSTALL.md](https://github.com/rrhuffy/hybr
 Execute script
 ==
 Execute script in HAC -> Console -> Scripting Languages (with selected commit or rollback mode) and return output.
-Be aware that some loadbalancers have set request timeout to 60s, so you won't see results output if your script needs more than 1 minute to execute (but it will execute normally). In these situations you may need to use `System.out.println`/`Logger` to have script output in logs
+Be aware that some loadbalancers have set request timeout to 60s, so you won't see results output if your script needs more than 1 minute to execute (but it will execute normally). In these situations you may need to use `Logger` to have script output in logs (example in `findWhoIsReferencingThisPk.groovy`)
 
 Because I'm using it mostly to execute groovy scripts, I'm using bash functions to call it with groovy as a second parameter. Now I can run things with rollback mode (`xgr`) or with commit mode (`xg`) like this:
 
@@ -204,7 +204,7 @@ Listen to `$HYBRIS_DIR/log/tomcat/console-yyyymmdd.log` and search for server st
 ylisten --startup
 # wait until server has been started, then start update
 # (do "ant clean all && ./hybrisserver.sh debug" in a separate window before executing this command)
-ylisten --startup | yupdate
+ylisten --startup && yupdate
 ```
 
 Show remote server logs
