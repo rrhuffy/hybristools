@@ -131,7 +131,7 @@ allTypesToSearch.each { currentlySearchedType ->
             {ad.qualifier},
             {enclosingType.code},
             {enclosingTypeType.code},
-            {modifiers}&8192=8192
+            case {modifiers} & power(2,13) when 0 then 0 else 1 end
         from {
             AttributeDescriptor as ad
             join Type as enclosingType on {ad.enclosingType} = {enclosingType.pk}
@@ -235,7 +235,7 @@ allTypesToSearch.each { currentlySearchedType ->
             select
                 {enclosingType.code},
                 {ad.qualifier},
-                {modifiers}&8192=8192
+                case {modifiers} & power(2,13) when 0 then 0 else 1 end
             from {
                 AttributeDescriptor! as ad 
                 join ComposedType as enclosingType on {ad.enclosingType}={enclosingType.pk} 
