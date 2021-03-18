@@ -2,11 +2,15 @@
 xg $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters 8796093057183 | multiline_tabulate -
 while inotifywait -qe modify "$PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy"; do echo && xg $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters 8796093057183 | multiline_tabulate -; done;
 
-WARNING: Do NOT run that on production server, because jalo/dynamic handler is slow, especially when you have huge database
+TODO: hide duplicated PKs, in example below there should be only Employee result
+xg $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters $(xf "select {pk} from {UserGroup} where {uid}='admingroup'" -A --data) | grep -E "$(xf "select {pk} from {Principal} where {uid}='admin'" -A --data | paste -sd '|' -)"
+PrincipalGroupRelation.source   8796093054980   PrincipalGroupRelation.target   8796093054981
+Principal.pk    8796093054980   Principal.allGroups     8796093054981
+User.pk 8796093054980   User.allGroups  8796093054981
+Employee.pk     8796093054980   Employee.allGroups      8796093054981
+Link.source     8796093054980   Link.target     8796093054981
 
-TODO: set proper ordering of results (show SimpleBannerComponent before AbstractBannerComponent results), then hide duplicated PKs (using specialized class for output and discarding general ones)
-
-TODO: split into query generation and execution parts, then print completion percentage
+TODO: split into query generation and execution parts, then print (to logs) completion percentage (otherwise we won't know how long we need to wait for results on server with huge database)
 
 Works with:
 normal fields
@@ -94,6 +98,7 @@ echo "Expecting: " && xf "select {pk} from {RendererTemplate} where {code}='Defa
 
 DEBUG = 0
 PRINT_TO_LOGS = 0
+USE_JALO_AND_DYNAMIC_HANDLER = 1 // this handler is slow, because it is not using Flexible Search queries, it calls getters on groovy side instead
 TYPE_BLACKLIST = ["ItemSyncTimestamp", "ModifiedCatalogItemsView", "ItemTargetVersionView", "ItemSourceVersionView"] as Set
 
 pkToSearchAsString = '''$1'''
@@ -168,9 +173,13 @@ allTypesToSearch.each { currentlySearchedType ->
         TODO: check if there can be a situation, where someone is using Item.owner field, but it is not fetched in jalo/dynamic way
     */
 
-    descriptorsResults = descriptorsResults.findAll { qualifier, code, type, isJaloOrDynamicField -> !TYPE_BLACKLIST.contains(code) } // filter our blacklisted entries like ItemSyncTimestamp or non-searchable Items with name *View
+    // filter our blacklisted entries like ItemSyncTimestamp or non-searchable Items with name *View
+    descriptorsResults = descriptorsResults.findAll { qualifier, code, type, isJaloOrDynamicField -> !TYPE_BLACKLIST.contains(code) }
     descriptorsResults.each { qualifier, code, type, isJaloOrDynamicField ->
         if (isJaloOrDynamicField) {
+            if (!USE_JALO_AND_DYNAMIC_HANDLER) {
+                return
+            }
             jaloOrDynamicQueryString = "select {pk} from {${code}}"
             jaloOrDynamicQueryResult = flexibleSearchService.search(jaloOrDynamicQueryString).result
             debug "        Checking jalo/dynamic field in: ${code}.$qualifier (iterating through ${jaloOrDynamicQueryResult.size()} items)"
@@ -264,6 +273,9 @@ allTypesToSearch.each { currentlySearchedType ->
         descriptorsWithCollectionResults = flexibleSearchService.search(descriptorsWithCollectionQuery).result
         descriptorsWithCollectionResults.each { typeToCheck, qualifierToCheck, isJaloOrDynamicField ->
             if (isJaloOrDynamicField) {
+                if (!USE_JALO_AND_DYNAMIC_HANDLER) {
+                    return
+                }
                 jaloOrDynamicCollectionQueryString = "select {pk} from {${typeToCheck}}"
                 jaloOrDynamicCollectionQueryResult = flexibleSearchService.search(jaloOrDynamicCollectionQueryString).result
                 debug "            Checking jalo/dynamic field in: ${typeToCheck}.$qualifierToCheck (iterating through ${jaloOrDynamicCollectionQueryResult.size()} items)"
