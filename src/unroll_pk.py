@@ -7,10 +7,8 @@
 # TODO: BUG: when analyse#0 returns some pk it is also unwrapped...even if it is a "pk"
 
 import argparse
-import csv
 import inspect
 import logging
-import os
 import re
 
 import sys
@@ -234,15 +232,6 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
 
 
 if __name__ == '__main__':
-    logging_helper.run_ipython_on_exception()
-
-    COLUMN_BLACKLIST = {'hjmpTS', 'createdTS', 'modifiedTS', 'TypePkString', 'OwnerPkString', 'aCLTS', 'propTS'}
-    replace_dictionary = None
-    if os.path.exists(f'{__file__}.dat'):
-        with open(f'{__file__}.dat') as replace_dictionary_file:
-            reader = csv.reader(replace_dictionary_file)
-            replace_dictionary = dict((key, val) for key, val in reader)
-
     parser = argparse.ArgumentParser('Script for finding info about Item with given PK')
     hybris_argparse_helper.add_hybris_hac_arguments(parser)
     parser.add_argument('text', help='string with pk to unroll or "-" if piping')

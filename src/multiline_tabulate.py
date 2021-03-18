@@ -240,8 +240,8 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
 # TODO: kwargs instead of millions of parameters?
 def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=None,
                        print_empty_columns=False, ignore_columns=None, limit_entries=None, limit_lines=None,
-                       replace_dictionary=None, align='l', use_colors=True, group=True, print_entry_breaks=False,
-                       sort=None, sort_descending=None, reverse=False, data_only=False, transpose=None):
+                       align='l', use_colors=True, group=True, print_entry_breaks=False, sort=None,
+                       sort_descending=None, reverse=False, data_only=False, transpose=None):
     """
 
     :param header_and_data: data to tabulate; in form: [ ['header1', 'h2'], ['data1','d2'], ['d11', 'd22'] ]
@@ -252,7 +252,6 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
     :param ignore_columns: list of blacklisted strings for column names, in form ['colName', 'anotherBlacklistedColumn']
     :param limit_entries: maximum amount of data entries to print (if used with limit_lines, it'll use both)
     :param limit_lines: maximum lines to print (if used with limit_entries, it'll use both)
-    :param replace_dictionary: used for example to name known elements like PKs: {'1234567890123': 'familiarNameForPK'}
     :param align: where align text to? [l]eft, [c]enter, [r]ight, used only if len(columns) > 1
     :param use_colors: should use brighter/darker color for even/odd lines?
     :param group: should extract common elements and print them before tabulating entries with unique columns?
@@ -343,9 +342,6 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
                 fixed_trailing_multiple_zeros = re.sub(r'(\d\.\d+?)0{2,}$', r'\g<1>0', fixed_whitespaces)
                 fixed_leading_and_trailing_whitespaces = fixed_trailing_multiple_zeros.strip()
                 replaced_value = fixed_leading_and_trailing_whitespaces
-                if replace_dictionary is not None and replaced_value in replace_dictionary:
-                    replaced_value = replace_dictionary[replaced_value]
-
                 temporary_line.append(replaced_value)
             else:
                 temporary_line.append('')
