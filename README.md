@@ -3,6 +3,8 @@ hybristools
 
 Collection of Hybris (SAP Commerce) tools for development, debugging and server maintenance.
 
+I use them on a daily basis (mostly with MySQL and sometimes with SAP Cloud/Azure Database). But beware: they are not 100% bug-free, and they were not written with an idea of publishing them...so don't look at python scripts' contents, especially don't check multiline_tabulate.py until I refactor it...or if you like to analyze 400 line methods, then go ahead :D Scripts might be ugly, but they work ;)
+
 <!--ts-->
    * [hybristools](#hybristools)
    * [Installation](#installation)
@@ -17,11 +19,19 @@ Collection of Hybris (SAP Commerce) tools for development, debugging and server 
    * [Show remote server logs](#show-remote-server-logs)
    * [Show Type inheritance tree](#show-type-inheritance-tree)
    * [Show all fields in given Type](#show-all-fields-in-given-type)
-   * [TODO](#todo)
-      * [Import impex with media](#import-impex-with-media)
-      * [Initialize and update](#initialize-and-update)
+   * [Find who is referencing this item](#find-who-is-referencing-this-item)
+   * [Compare Staged and Online version of Item](#compare-staged-and-online-version-of-item)
+   * [Get bean information](#get-bean-information)
+   * [Show request mappings](#show-request-mappings)
+   * [Show product's categories](#show-products-categories)
+   * [Show products in category](#show-products-in-category)
+   * [Synchronize catalogs](#synchronize-catalogs)
+   * [Show CMSNavigationNodes](#show-cmsnavigationnodes)
+   * [Flexible Search queries](#flexible-search-queries)
+   * [Import impex with media](#import-impex-with-media)
+   * [Update and initialize](#update-and-initialize)
 
-<!-- Added by: rafal, at: Mon Mar  1 17:45:54 CET 2021 -->
+<!-- Added by: rafal, at: Fri Mar 19 23:08:09 CET 2021 -->
 
 <!--te-->
 <!-- ~/gh-md-toc --no-backup $PROJECTS_DIR/hybristools/README.md -->
@@ -45,7 +55,6 @@ xg my_script.groovy
 ```
 
 If you have a groovy script saved in a file, you can insert $1, $2 inside it and use `--parameters "first" "second"` to replace them during execution. It is often used for files in folder `groovy/`.
-
 
 Execute flexible search
 ==
@@ -170,7 +179,6 @@ logallwait() { sl root DEBUG && echo "Logger root changed to DEBUG" && read -p "
 logallcommand() { sl root DEBUG && echo "Logger root changed to DEBUG" && $@ && echo && sl root INFO && echo "Logger root changed to INFO"; }
 ```
 
-
 Solr query
 ==
 
@@ -198,7 +206,7 @@ sl de.hybris.platform.solrfacetsearch.search.impl.DefaultFacetSearchStrategy DEB
 
 Listen to local server logs
 ==
-Listen to `$HYBRIS_DIR/log/tomcat/console-yyyymmdd.log` and search for server startup log (or any other regex), then you can use pipe to execute things like init/update, warmup storefront/backoffice, change focus to IDEA/browser, play sound, send a notification etc.
+Listen to `$HYBRIS_DIR/log/tomcat/console-yyyymmdd.log` and search for server startup log (or any other regex), then you can use && to execute things like init/update, warmup storefront/backoffice, change focus to IDEA/browser, play sound, send a notification etc.
 ```shell
 # wait until server has been started
 ylisten --startup
@@ -296,7 +304,7 @@ Item
 
 Show all fields in given Type
 ==
-Works in MySQL, because of `SUBSTRING_INDEX`. SAP Cloud is in TODO probably because of used `SUBSTRING_INDEX` or `TRIM` which may be MySQL specific
+Works in MySQL, but not in SAP Cloud, probably because of `SUBSTRING_INDEX`/`TRIM` which may be MySQL specific, also "&8192=8192" part is causing problems.
 
 Show all fields directly accessible from given Type (`sid`)
 
@@ -376,230 +384,7 @@ EnumerationValue                | UserDiscountGroup                           | 
 EnumerationValue                | UserPriceGroup                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 EnumerationValue                | UserTaxGroup                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 EnumerationValue                | LineOfBusiness                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RetentionState                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CustomerType                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | Gender                                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PhoneContactInfoType                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DeliveryStatus                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PaymentStatus                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderStatus                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ExportStatus                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CheckoutPaymentType                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ImportStatus                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SalesApplication                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ReturnFulfillmentStatus                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | QuoteState                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CreditCardType                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductPriceGroup                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductTaxGroup                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductDiscountGroup                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderEntryStatus                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PickupInStoreMode                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EncodingEnum                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | BarcodeType                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-JasperMedia                     | JasperMedia                                 | icon                | Media                                    | cockpit             | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-JasperMedia                     | CompiledJasperMedia                         | icon                | Media                                    | cockpit             | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ArticleApprovalStatus                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SavedValueEntryType                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ScriptType                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | documentTypeEnum                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RendererTypeEnum                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ErrorMode                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | JobLogLevel                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CronJobStatus                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CronJobResult                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | BooleanOperator                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ImpExValidationModeEnum                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ExportConverterEnum                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IndexerOperationValues                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductConfigurationPersistenceCleanUpMode  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DistributedProcessState                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ActionType                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProcessState                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | WarehouseConsignmentState                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | NotificationType                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | BatchType                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | Severity                                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ValidatorLanguage                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ConfiguratorType                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductInfoStatus                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductReference                | ProductReference                            | icon                | Media                                    | catalog             | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductReferenceTypeEnum                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductDifferenceMode                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CategoryDifferenceMode                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ClassificationAttributeTypeEnum             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ClassificationAttributeVisibilityEnum       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AdvancedQueryComparatorEnum                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EmptyParamEnum                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EnumerationValue                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PriceRowChannel                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | WorkflowActionType                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | WorkflowActionStatus                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsInterventionType                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsEventReason                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsResolutionType                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsFacetsMergeMode                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsBoostItemsMergeMode                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsBoostRulesMergeMode                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsSortsMergeMode                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsFacetType                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsBoostOperator                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsBoostType                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsSortOrder                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DestinationChannel                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RegistrationStatus                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EventPriority                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EventMappingType                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IntervalResolution                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | FraudStatus                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ConsignmentStatus                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | InStockStatus                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | StockLevelUpdateType                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DistanceUnit                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | WeekDay                                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PointOfServiceTypeEnum                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderModificationEntryStatus                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderCancelEntryStatus                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CancelReason                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ReturnStatus                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ReturnAction                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ReplacementReason                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RefundReason                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SiteTheme                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SiteChannel                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ABTestScopes                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | LinkTargets                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CmsSiteContext                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | FlashQuality                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | FlashScale                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | FlashWmode                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | FlashSalign                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CarouselScroll                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RotatingImagesComponentEffect               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductListLayouts                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CartTotalDisplayType                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | NavigationBarMenuLayout                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ScrollType                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | YFormDataActionEnum                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CmsApprovalStatus                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CmsItemDisplayStatus                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CmsPageStatus                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CmsRobotTag                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | UiExperienceLevel                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | LiveEditVariant                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CockpitSpecialCollectionType                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CustomerReviewApprovalType                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ItemVersionMarkerStatus                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IntegrationType                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ItemTypeMatchEnum                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IntegrationRequestStatus                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | HttpMethod                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AuthenticationType                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PaymentTransactionType                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RuleType                                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProductConfigRuleMessageSeverity            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DroolsEqualityBehavior                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DroolsEventProcessingMode                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DroolsSessionType                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RuleStatus                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | KeywordRedirectMatchType                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrPropertiesTypes                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrIndexedPropertyFacetType                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrWildcardType                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrIndexedPropertyFacetSort                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IndexMode                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrCommitMode                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrOptimizeMode                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrServerModes                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrQueryMethod                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IndexerOperationStatus                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SolrItemModificationType                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-StoreLocatorFeature             | StoreLocatorFeature                         | icon                | Media                                    | commerceservices    | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | B2BBookingLineStatus                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | BookingType                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | B2BPeriodRange                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | B2BRateType                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | MerchantCheckStatus                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | MerchantCheckStatusEmail                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PermissionStatus                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | BundleRuleTypeEnum                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | BundleTemplateStatusEnum                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EntitlementTimeUnit                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SiteMessageType                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CxItemStatus                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CxGroupingOperator                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CxCatalogLookupType                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CxUserType                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsEmailRecipients                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsTicketCategory                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsTicketPriority                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CsTicketState                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ExportDataStatus                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SiteMapPageEnum                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SiteMapChangeFrequencyEnum                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DocumentStatus                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DocumentPayableOrUsable                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ConversationStatus                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | couponNotificationStatus                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DeclineReason                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | AsnStatus                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | Wishlist2EntryPriority                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | YFormDefinitionStatusEnum                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | YFormDataTypeEnum                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RelationEndCardinalityEnum                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | TypeOfCollectionEnum                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | TestEnum                                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | MediaManagementTypeEnum                     | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | GroupType                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DayOfWeek                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ImpExProcessModeEnum                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ScriptModifierEnum                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ScriptTypeEnum                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RegexpFlag                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | IDType                                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ArticleStatus                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EclassVersion                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EtimVersion                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ProfiClassVersion                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SyncItemStatus                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderCancelState                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderReturnEntryStatus                      | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | StockLevelStatus                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ReportTimeRange                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OneDayRange                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | RefreshTimeOption                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | changeType                                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OrderEntrySelectionStrategy                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | FactContextType                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ConverterType                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | QuoteAction                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | QuoteUserType                               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DiscountType                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SearchQueryContext                          | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | QuoteNotificationType                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CountryType                                 | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | B2BGroupEnum                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | B2BPermissionTypeEnum                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | MerchantCheckType                           | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | WorkflowTemplateType                        | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PermissionType                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | NotificationChannel                         | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CustomizationConversionOptions              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CustomerSegmentationConversionOptions       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SegmentConversionOptions                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | VariationConversionOptions                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | TriggerConversionOptions                    | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | EventType                                   | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CheckoutPciOptionEnum                       | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CheckoutFlowEnum                            | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | DocumentSort                                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | ItemInItemType                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PunchOutOrderOperationAllowed               | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | PunchOutClassificationDomain                | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | StockLevelAdjustmentReason                  | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | OData2webservicesFeatureTestPropertiesTypes | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | CartSourceType                              | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-EnumerationValue                | SwatchColorEnum                             | icon                | Media                                    | core                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
+...
 AbstractChangeProcessorJob      | AbstractChangeProcessorJob                  | input               | Media                                    | deltadetection      | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 1
 AbstractChangeProcessorJob      | ConsumeAllChangesJob                        | input               | Media                                    | deltadetection      | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 1
 AbstractChangeProcessorJob      | ScriptChangeConsumptionJob                  | input               | Media                                    | deltadetection      | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 1
@@ -636,31 +421,7 @@ AbstractPage                    | ProductConfigPage                           | 
 AbstractPage                    | ProductConfigOverviewPage                   | previewImage        | Media                                    | cms2                | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 ProductPromotion                | ProductPromotion                            | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 ProductPromotion                | ProductFixedPricePromotion                  | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductPercentageDiscountPromotion          | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductBOGOFPromotion                       | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | AcceleratorProductBOGOFPromotion            | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductMultiBuyPromotion                    | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | AcceleratorProductMultiBuyPromotion         | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductSteppedMultiBuyPromotion             | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductBundlePromotion                      | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductPerfectPartnerPromotion              | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductOneToOnePerfectPartnerPromotion      | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductPerfectPartnerBundlePromotion        | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductPriceDiscountPromotionByPaymentType  | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-ProductPromotion                | ProductThresholdPriceDiscountPromotion      | productBanner       | Media                                    | promotions          | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | Principal                                   | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | User                                        | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | PrincipalGroup                              | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | UserGroup                                   | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | TestUserGroup                               | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | Company                                     | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | OrgUnit                                     | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | B2BUnit                                     | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | Employee                                    | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | BackofficeRole                              | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | CustomerList                                | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | StoreEmployeeGroup                          | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
-Principal                       | B2BUserGroup                                | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
+...
 Principal                       | CsAgentGroup                                | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 Principal                       | TestEmployee                                | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
 Principal                       | Customer                                    | profilePicture      | Media                                    | comments            | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 1
@@ -691,26 +452,248 @@ SavedCartFileUploadProcess      | SavedCartFileUploadProcess                  | 
 ```
 </details>
 
-TODO
+Find who is referencing this item
 ==
-- example output/usage for files from `flexible`, `groovy` and `impex` folders
-- ShowItem and ShowItemDirect working with SAP Cloud (instead of only MySQL like now)
-- selenium scripts (already written, need only selenium installation instructions)
 
-<details><summary>TODO: Selenium scripts, needs selenium installation instructions</summary>
+Do you want to know which item is referencing given item? Works with normal fields, enums, localized types, relations, CollectionTypes and...jalo/dynamic fields (but this handler is much slower that other ones).
+```shell
+# who uses SolrIndexConfig with name "Default" (8796093089955 in my case)?
+yf 8796093089955
+Type                     | pk            | qualifier                             | searchedPk
+SolrFacetSearchConfig.pk | 8796093089944 | SolrFacetSearchConfig.solrIndexConfig | 8796093089955
+SolrFacetSearchConfig.pk | 8796093122712 | SolrFacetSearchConfig.solrIndexConfig | 8796093089955
+SolrFacetSearchConfig.pk | 8796093155480 | SolrFacetSearchConfig.solrIndexConfig | 8796093089955
+SolrFacetSearchConfig.pk | 8796093188248 | SolrFacetSearchConfig.solrIndexConfig | 8796093089955
 
-## Import impex with media
+# the same but using a function with unrolling pk:
+yfa 8796093089955
+Type                     | pk                                            | qualifier                             | searchedPk
+SolrFacetSearchConfig.pk | [SolrFacetSearchConfig](name)apparel-ukIndex  | SolrFacetSearchConfig.solrIndexConfig | [SolrIndexConfig](name)Default
+SolrFacetSearchConfig.pk | [SolrFacetSearchConfig](name)apparel-deIndex  | SolrFacetSearchConfig.solrIndexConfig | [SolrIndexConfig](name)Default
+SolrFacetSearchConfig.pk | [SolrFacetSearchConfig](name)powertoolsIndex  | SolrFacetSearchConfig.solrIndexConfig | [SolrIndexConfig](name)Default
+SolrFacetSearchConfig.pk | [SolrFacetSearchConfig](name)electronicsIndex | SolrFacetSearchConfig.solrIndexConfig | [SolrIndexConfig](name)Default
+```
+
+Compare Staged and Online version of Item
+==
+
+```
+xg $PROJECTS_DIR/hybristools/groovy/compareItemStagedAndOnline.groovy --parameters Product code 29532 $'\36' | unroll_pk - | multiline_tabulate - 12345 --csv-delimiter=$'\36' -gt --width=100
+-----------------------------------------------Common-----------------------------------------------
+itemtype                | ApparelProduct
+code                    | 29532
+ean                     | 953539556
+europe1PriceFactory_PTG | eu-vat-full
+europe1Prices           | [8796093219871, 8796093056031, 8796093318175]
+europe1Taxes            | [8796093219870, 8796093416478, 8796093121566, 8796093350942, 8796093088798
+                        | , 8796093318174, 8796093187102, 8796093383710]
+galleryImages           | [[MediaContainer](qualifier)29532_1]
+genders                 | [MALE]
+normal                  | [[Media](code)/300Wx300H/29532_1.jpg]
+numberOfReviews         | 0
+others                  | [[Media](code)/1200Wx1200H/29532_1.jpg, [Media](code)/515Wx515H/29532_1.jp
+                        | g, [Media](code)/300Wx300H/29532_1.jpg, [Media](code)/96Wx96H/29532_1.jpg,
+                        |  [Media](code)/65Wx65H/29532_1.jpg, [Media](code)/30Wx30H/29532_1.jpg]
+picture                 | [Media](code)/300Wx300H/29532_1.jpg
+priceQuantity           | 1.0
+reviewCount             | 0
+soldIndividually        | true
+supercategories         | [[Category](code)Toko, [Category](code)skigear, [Category](code)100200, [C
+                        | ategory](code)snow]
+thumbnail               | [Media](code)/96Wx96H/29532_1.jpg
+thumbnails              | [[Media](code)/96Wx96H/29532_1.jpg]
+unit                    | [Unit](code)pieces
+summary[en]             | Negative side and blade angle for professional blade tuning. The tool used
+                        |  by alpine World Cup pros.
+name[en]                | Snowboard Ski Tool Toko Side Edge Tuning Angle Pro 87 Grad
+-----------------------------------------------Unique-----------------------------------------------
+-------------------------------------------------0--------------------------------------------------
+1 pk                         |creationtime                |modifiedtime                |           1
+2 catalogVersion              |approvalStatus|summary[de]|summary[pl]                              2
+-------------------------------------------------1--------------------------------------------------
+1 8796093054977              |Wed Mar 10 08:59:53 CET 2021|Fri Mar 19 21:05:23 CET 2021|           1
+2 apparelProductCatalog/Staged|CHECK         |test äöü   |test żółć                                2
+-------------------------------------------------2--------------------------------------------------
+1 [ApparelProduct](code)29532|Wed Mar 10 09:02:25 CET 2021|Wed Mar 10 09:02:25 CET 2021|           1
+2 apparelProductCatalog/Online|APPROVED      |null       |null                                     2
+```
+
+Get bean information
+==
+
+```
+# print all beans from all contexts, useful when grepping through output
+xg $PROJECTS_DIR/hybristools/groovy/getAllBeansFromAllContexts.groovy | grep authenticationManager
+merchandisingcmswebservices/org.springframework.security.authenticationManager
+occ/org.springframework.security.authenticationManager
+personalizationsearchsmartedit/org.springframework.security.authenticationManager
+cmssmartedit/org.springframework.security.authenticationManager
+cmswebservices_junit/org.springframework.security.authenticationManager
+...and more
+
+# find bean in given context and print fields and methods
+xg $PROJECTS_DIR/hybristools/groovy/getBeanFromContext.groovy --parameters backoffice backofficeLocaleService
+Found backofficeLocaleService:
+com.hybris.backoffice.i18n.BackofficeLocaleService@18c8b22e
+
+Fields:
+ZKSession -> null
+cockpitProperties -> com.hybris.backoffice.cockpitng.util.impl.PlatformSystemPropertyResolver@309b5fcb
+class -> class com.hybris.backoffice.i18n.BackofficeLocaleService
+cockpitConfigurationService -> com.hybris.backoffice.config.impl.BackofficeCockpitConfigurationService@28b524f1
+allUILocales -> [es_CO, pt, fr, ru, ja, zh_TW, it, ko, de, es, zh, en, hi, cs, hu, pl]
+cockpitLocalesFactory -> com.hybris.cockpitng.config.locales.factory.impl.DefaultCockpitLocalesFactory@170ce4ae
+allLocales -> [es_CO, in, pt, fr, ru, ja, zh_TW, it, ko, de, es, zh, en, hi, cs, hu, pl]
+i18nService -> de.hybris.platform.servicelayer.i18n.impl.DefaultI18NService$$EnhancerBySpringCGLIB$$12e8f585@65d8107e
+localePersistenceOnToggleEnabled -> false
+currentLocale -> en_US
+globalProperties -> com.hybris.backoffice.cockpitng.util.impl.PlatformSystemPropertyResolver@2815ad51
+
+Methods:
+equals
+executeWithLocale
+getAllLocales
+getAllUILocales
+getAvailableDataLocales
+getClass
+getCurrentLocale
+getDefaultDataLocale
+...and more
+```
+
+Show request mappings
+==
+
+```
+xg $PROJECTS_DIR/hybristools/groovy/getRequestMappings.groovy --parameters yb2bacceleratorstorefront | multiline_tabulate - -S1
+Pattern                                                      | Methods       | Controller                             | Method
+[/**/c/{categoryCode:.*}/facets]                             | [GET]         | CategoryPageController                 | getFacets
+[/**/c/{categoryCode:.*}/results]                            | [GET]         | CategoryPageController                 | getResults
+[/**/c/{categoryCode:.*}]                                    | [GET]         | CategoryPageController                 | category
+[/**/p/{productCode:.*}/configuratorPage]                    | [GET]         | ConfigureController                    | productDetail
+[/**/p/{productCode:.*}/futureStock]                         | [GET]         | ProductPageController                  | productFutureStock
+[/**/p/{productCode:.*}/grid/skusFutureStock]                | [POST]        | ProductPageController                  | productSkusFutureStock
+[/**/p/{productCode:.*}/orderForm]                           | [GET]         | ProductPageController                  | productOrderForm
+[/**/p/{productCode:.*}/quickView]                           | [GET]         | ProductPageController                  | showQuickView
+[/**/p/{productCode:.*}/review]                              | [GET || POST] | ProductPageController                  | postReview
+[/**/p/{productCode:.*}/reviewhtml/{numberOfReviews:.*}]     | [GET]         | ProductPageController                  | reviewHtml
+[/**/p/{productCode:.*}/writeReview]                         | [GET]         | ProductPageController                  | writeReview
+[/**/p/{productCode:.*}/writeReview]                         | [POST]        | ProductPageController                  | writeReview
+[/**/p/{productCode:.*}/zoomImages]                          | [GET]         | ProductPageController                  | showZoomImages
+[/**/p/{productCode:.*}]                                     | [GET]         | ProductPageController                  | productDetail
+...and more
+```
+
+Show product's categories
+==
+WARNING! Replacing all "/" into "\", because "/" is used by treepywithoutcolor as a separator
+```
+xg $PROJECTS_DIR/hybristools/groovy/printProductCategoriesRecursively.groovy --parameters 3881061 | treepywithoutcolor
+[Product](code)3881061 <Cordless drill\driver 2311> {Online}
+├── [Category](code)1360 <Power Drills> {Online}
+│   ├── [Category](code)1355 <Tools> {Online}
+│   │   └── [Category](code)1 <Open Catalogue> {Online}
+│   ├── [ClassificationClass](code)4593 <Technical details> {1.0}
+│   ├── [ClassificationClass](code)4670 <Weight & dimensions> {1.0}
+│   ├── [ClassificationClass](code)4671 <Energy management> {1.0}
+│   └── [ClassificationClass](code)4684 <Packaging content> {1.0}
+└── [Category](code)brand_4515 <Skil> {Online}
+    └── [Category](code)brands <Brands> {Online}
+```
+
+Show products in category
+==
+WARNING! Replacing all "/" into "\", because "/" is used by treepywithoutcolor as a separator
+```
+xg $PROJECTS_DIR/hybristools/groovy/printProductsInsideCategory.groovy --parameters 106 | treepywithoutcolor
+[106](Components)
+└── [830](Cables For Computers And Peripherals)
+    ├── [1505](Cable Crimpers\Cutters\Strippers)
+    │   ├── 1678256 1300 Broadcast Pack
+    │   └── 1678313 ProPunch™ 110
+    └── [953]()
+        └── 2613282 1m USA 10Gb LC\LC Duplex 50\125 Multimode Fiber Patch Cable
+```
+
+Synchronize catalogs
+==
+
+```shell
+xg $PROJECTS_DIR/hybristools/groovy/synchronizeCatalog.groovy --parameters apparel Product
+# then run created cronJob:
+xg 'cronJobService.performCronJob(cronJobService.getCronJob("000002BG"))'
+# check if it's finished
+xg 'cronJobService.getCronJob("000002BG").getStatus()'
+```
+
+Show CMSNavigationNodes
+==
+
+```
+xg $PROJECTS_DIR/hybristools/groovy/printCmsNavigationNodes.groovy --parameters powertoolsContentCatalog | treepywithoutcolor
+root (root)
+└── SiteRootNode (SiteRootNode)
+    └── PowertoolsNavNode (Powertools Site)
+        ├── FooterNavNode (Footer Pages)
+        │   ├── FollowUsNavNode (Follow Us Pages)
+        │   │   ├── AgileCommerceBlogNavNode (Agile Commerce Blog Page)
+        │   │   ├── FacebookNavNode (Facebook Page)
+        │   │   ├── LinkedInNavNode (LinkedIn Page)
+        │   │   └── TwitterNavNode (Twitter Page)
+        │   ├── SAPCommerceNavNode (SAP Commerce Cloud Pages)
+        │   │   ├── AboutSAPCommerceNavNode (About SAP Commerce Cloud Page)
+        │   │   └── DocumentationNavNode (Documentation Page)
+        │   └── SAPCustomerExperienceNavNode (SAP Customer Experience Pages)
+        │       ├── AboutSAPCustomerExperienceNavNode (About SAP Customer Experience Page)
+...and more
+```
+
+Flexible Search queries
+==
+
+```
+xf $PROJECTS_DIR/hybristools/flexible/CronJobsLastRunned -a
+code                                       | job                                             | startTime               | duration | endTime                 | result
+update-backofficeIndex-CronJob             | _solrIndexerJob                                 | 2021-03-19 21:56:06.425 | 0.0640   | 2021-03-19 21:56:06.489 | _SUCCESS
+update-apparel-ukIndex-cronJob             | _solrIndexerJob                                 | 2021-03-19 21:55:46.394 | 0.3140   | 2021-03-19 21:55:46.708 | _SUCCESS
+update-apparel-deIndex-cronJob             | _solrIndexerJob                                 | 2021-03-19 21:55:46.4   | 0.2940   | 2021-03-19 21:55:46.694 | _SUCCESS
+update-electronicsIndex-cronJob            | _solrIndexerJob                                 | 2021-03-19 21:55:36.373 | 0.090    | 2021-03-19 21:55:36.463 | _SUCCESS
+update-powertoolsIndex-cronJob             | _solrIndexerJob                                 | 2021-03-19 21:55:36.375 | 0.0860   | 2021-03-19 21:55:36.461 | _SUCCESS
+000002BF                                   | _sync apparelProductCatalog:Staged-&gt;Online   | 2021-03-19 21:37:50.256 | 2.1040   | 2021-03-19 21:37:52.36  | _SUCCESS
+cleanupCxPersonalizationProcessesCronJob   | _cleanupCxPersonalizationProcessJobsPerformable | 2021-03-19 21:27:33.047 | 0.020    | 2021-03-19 21:27:33.067 | _SUCCESS
+xyFormHistoryRetentionCronJob              | _xyFormHistoryJob                               | 2021-03-19 21:25:42.835 | 0.020    | 2021-03-19 21:25:42.855 | _SUCCESS
+cronJobHistoryRetentionCronJob             | _cronJobHistoryRetentionJob                     | 2021-03-19 21:00:09.745 | 1.3760   | 2021-03-19 21:00:11.121 | _SUCCESS
+expiredInterestsCleanUpJob                 | _expiredInterestsCleanUpJob                     | 2021-03-19 21:00:09.745 | 0.0270   | 2021-03-19 21:00:09.772 | _SUCCESS
+...and more
+
+xf $PROJECTS_DIR/hybristools/flexible/ZoneDeliveryModeWithZoneAndValue
+store      | zoneDeliveryMode | zdmNameEn         | zdmDescriptionEn  | zone              | value  | minimum | currency
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | china             | 27.99  | 0.0     | [Currency](isocode)EUR
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | china             | 14.49  | 0.0     | [Currency](isocode)USD
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | china             | 99.49  | 0.0     | [Currency](isocode)JPY
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | china             | 18.49  | 0.0     | [Currency](isocode)GBP
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | otherAsianRegions | 19.99  | 0.0     | [Currency](isocode)EUR
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | otherAsianRegions | 14.99  | 0.0     | [Currency](isocode)USD
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | otherAsianRegions | 99.99  | 0.0     | [Currency](isocode)JPY
+apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | otherAsianRegions | 10.99  | 0.0     | [Currency](isocode)GBP
+...and more
+```
+Check also other queries in `$PROJECTS_DIR/hybristools/flexible folder`
+
+Import impex with media
+==
+
 Opens firefox or chrome (either with GUI or headless), logs into Backoffice/HMC and imports `media.impex`
 with `media.zip`. This allows for importing multiple files (like images) into Hybris.<br/>
 Shortcut: <b>I</b>mport <b>I</b>mpex with <b>M</b>edia <b>BO/HMC</b>:
 
 ```shell
-iimbo path/to/media.impex path/to/media.zip
-iimhmc path/to/media.impex path/to/media.zip
-# TODO: test
+iimbo $PROJECTS_DIR/hybristools/impex/mediaWithZipFile.impex $PROJECTS_DIR/hybristools/impex/mediaWithZipFile.zip
+iimhmc $PROJECTS_DIR/hybristools/impex/mediaWithZipFile.impex $PROJECTS_DIR/hybristools/impex/mediaWithZipFile.zip
 ```
 
-## Update and initialize
+Update and initialize
+==
 
 Logs into HAC -> Platform -> Update/Initialization, optionally toggle extension or change dropdown (like "sample data"
 etc.) and starts the update/initialization
@@ -731,5 +714,3 @@ yinit
 # initialize with "Include test data" set to "yes".
 yinit "projectxpatches:Include test data:yes"
 ```
-
-</details>

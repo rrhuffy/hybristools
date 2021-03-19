@@ -13,7 +13,7 @@ They will also work in Windows (without WSL), but without convenient shortcuts (
       * [Using servers with basic http auth](#using-servers-with-basic-http-auth)
       * [Debugging](#debugging)
 
-<!-- Added by: rafal, at: Mon Mar  1 17:45:57 CET 2021 -->
+<!-- Added by: rafal, at: Fri Mar 19 22:40:03 CET 2021 -->
 
 <!--te-->
 <!-- ~/gh-md-toc --no-backup $PROJECTS_DIR/hybristools/INSTALL.md -->
