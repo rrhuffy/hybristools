@@ -172,7 +172,7 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
             if use_colors:
                 output_buffer += shell_helper.colorized_center(data_index, terminal_width, '-', 235, 240, 235)
             else:
-                output_buffer += '-'.center(terminal_width)
+                output_buffer += str(data_index).center(terminal_width, '-')
 
             if use_newlines:
                 output_buffer += '\n'

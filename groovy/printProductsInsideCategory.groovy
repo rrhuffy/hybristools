@@ -1,5 +1,5 @@
 // xg $PROJECTS_DIR/hybristools/groovy/printProductsInsideCategory.groovy --parameters 106 | treepywithoutcolor
-// WARNING! Replacing all "/" into "\", because "/" is used in output text for treepywithoutcolor
+// WARNING! Replacing all "/" into "\", because "/" is used by treepywithoutcolor as a separator
 
 categoryCode = '$1'
 

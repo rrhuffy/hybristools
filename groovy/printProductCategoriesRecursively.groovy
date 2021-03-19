@@ -1,4 +1,5 @@
 // xg $PROJECTS_DIR/hybristools/groovy/printProductCategoriesRecursively.groovy --parameters 3881061 | treepywithoutcolor
+// WARNING! Replacing all "/" into "\", because "/" is used by treepywithoutcolor as a separator
 
 def getItemName(item) {
     // first try default locale for name, if it is not set then try en, then pl and then pl_PL locales

@@ -25,3 +25,5 @@ syncItemCronJobModel.setAbortOnCollidingSync(false);
 modelService.save(syncItemCronJobModel);
 println "TODO: figure out why it's not working when created and started from groovy, as a workaround run this manually:"
 println "xg 'cronJobService.performCronJob(cronJobService.getCronJob(\"${syncItemCronJobModel.getCode()}\"))'"
+println "To check if it is completed:"
+println "xg 'cronJobService.getCronJob(\"${syncItemCronJobModel.getCode()}\").getStatus()'"

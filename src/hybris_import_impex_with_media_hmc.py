@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-# TODO: logging instead of print
 import argparse
-import time
 
+import time
 from selenium.webdriver.support.ui import WebDriverWait
 
 from lib import hybris_argparse_helper
 from lib import hybris_selenium_helper
 from lib import logging_helper
 from lib import selenium_helper
-from lib.helpers import pause_with_enter_or_exit
 
 parser = argparse.ArgumentParser('Script for importing IMPEX with media zip in HMC')
-hybris_argparse_helper.add_hybris_bo_arguments(parser)
+hybris_argparse_helper.add_hybris_hmc_arguments(parser)
 logging_helper.add_logging_arguments_to_parser(parser)
 parser.add_argument('impex', type=str, help='File with impex')
 parser.add_argument('media', type=str, help='File with media')
@@ -77,8 +75,6 @@ driver.switch_to.window(wizard_win_handle)
 
 # save currently opened windows
 previously_opened_windows = driver.window_handles.copy()
-
-pause_with_enter_or_exit("enter to start")
 
 # start importing impex file
 driver.find_element_by_xpath('//a[@title="Start"]').click()

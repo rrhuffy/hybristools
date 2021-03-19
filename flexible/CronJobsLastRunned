@@ -1,4 +1,11 @@
-select {code}, {job}, {startTime}, {endTime}-{startTime} as duration, {endTime}, {result}, {nodeId}
+select
+    {code} as code,
+    {job} as job,
+    {startTime} as startTime,
+    {endTime}-{startTime} as duration,
+    {endTime} as endTime,
+    {result} as result,
+    {nodeId} as nodeId
 from {CronJob}
 where 
     {active} = 1

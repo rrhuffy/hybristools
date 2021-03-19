@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-# TODO: logging instead of print
+
 import argparse
 import re
 
+import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -28,9 +29,14 @@ WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//tr[@tit
 
 # expand "System"
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//tr[@title="System"]'))).click()
+# avoid exception: selenium.common.exceptions.StaleElementReferenceException: Message: The element reference of
+# <tr id="pQ6Qur2" class="yw-navigationNode-level2 z-treerow"> is stale; either the element is no longer attached to
+# the DOM, it is not in the current frame context, or the document has been refreshed
+time.sleep(0.5)
 
 # expand "Tools"
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//tr[@title="Tools"]'))).click()
+time.sleep(0.5)
 
 # click on "Import"
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//tr[@title="Import"]'))).click()

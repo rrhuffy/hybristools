@@ -1,0 +1,5 @@
+$version = Staged
+$productCatalog = powertoolsProductCatalog
+$productCV = catalogVersion(catalog(id[default=$productCatalog]), version[default=$version])
+INSERT_UPDATE Media; code[unique = true]; @media[translator = de.hybris.platform.impex.jalo.media.MediaDataTranslator]; mime[default = 'image/png']; $productCV
+                   ; lenna              ; lenna.png

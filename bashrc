@@ -84,6 +84,7 @@ si() { xf $PROJECTS_DIR/hybristools/flexible/ShowItem 99999 "${@:2}" --parameter
 sid() { xf $PROJECTS_DIR/hybristools/flexible/ShowItemDirect 99999 "${@:2}" --parameters "$1"; }
 
 yf() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | debuginfowarnerrortostderr | multiline_tabulate - -T "${@:2}"; }
+yfa() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | unroll_pk - | debuginfowarnerrortostderr | multiline_tabulate - -T "${@:2}"; }
 
 removeitem() {
     if [[ -z "$1" ]]; then
