@@ -114,4 +114,5 @@ if 'Import has encountered problems' in result_string:
     sys.exit(1)
 
 logging.debug(f'Result for {args.impex[:100]}: {result_string}')
+logging.info('Impex imported successfully')
 sys.exit(0)
