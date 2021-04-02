@@ -1,8 +1,8 @@
 import logging
 import re
-import sys
 
 import requests
+import sys
 from keepasshttplib import keepasshttplib
 from lib import helpers
 from lib import requests_helper
@@ -17,7 +17,12 @@ def return_csrf_if_session_is_valid(session, url):
     if not url.endswith('/'):
         logging.debug(f'url "{url}" does not ends with /')
 
-    text = session.get(url, verify=False).text
+    try:
+        text = session.get(url, verify=False).text
+    except requests.exceptions.ConnectionError as e:
+        logging.error(f'Caught exception while doing GET on {url}: {e}')
+        sys.exit(1)
+
     if 'HTTP Status 404' in text:
         print(f'Found 404 in url {url}, probably bad HAC address')
         return None
@@ -77,7 +82,11 @@ def get_credentials_from_keepass_if_empty(address, credentials):
 def _internal_log_in(address, credentials, session, address_to_cookies_map):
     logging.debug(f'Opening login page ({address})...')
     # 1811 is redirecting to /hac/login.jsp, 2005 is redirecting to /hac/login so we must rely on 302 redirect from /hac
-    login_get_result = session.get(address, verify=False)
+    try:
+        login_get_result = session.get(address, verify=False)
+    except requests.exceptions.ConnectionError as exc:
+        print(f'Caught an exception when trying to load url: {address}\n{exc}')
+        sys.exit(1)
 
     try:
         login_csrf_token = re.search(r'name="_csrf"\s+value="(.+?)"\s*/>', login_get_result.text).group(1)
