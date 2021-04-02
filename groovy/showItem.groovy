@@ -1,5 +1,5 @@
 separator = '$4'
-blacklist = ['itemModelContext', 'tenantId', 'class', 'sealed']
+blacklist = ['itemModelContext', 'tenantId', 'class', 'sealed', 'type']
 
 def getItemsInOnlineIfPossible(type, qualifier, value, maxReturnedItems=3) {
     originalResult = flexibleSearchService.search("select {pk} from {$type} where {$qualifier}='$value'").result
