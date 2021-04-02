@@ -2,8 +2,8 @@
 import argparse
 import logging
 import re
-import sys
 
+import sys
 from bs4 import BeautifulSoup
 
 from lib import argparse_helper
@@ -59,7 +59,8 @@ def execute_script(script, script_type, rollback, address, user, password, sessi
     form_data_without_script = {k: v for k, v in form_data.items() if k != 'script'}
     logging.debug(f'form_data_without_script: {form_data_without_script}')
     logging.debug('...executing...')
-    script_post_result = session.post(address + '/console/scripting/execute', data=form_data)
+    execute_address = address + '/console/scripting/execute'
+    script_post_result = session.post(execute_address, data=form_data)
     logging.debug('done, printing results:')
     if script_post_result.status_code == 500:
         bs = BeautifulSoup(script_post_result.text, 'html.parser')
@@ -68,7 +69,11 @@ def execute_script(script, script_type, rollback, address, user, password, sessi
         first_n_lines = '\n'.join(html.strip().split('\n')[0:number_of_lines_to_show])
         msg = f'Received HTTP500, printing first {number_of_lines_to_show} lines of result:\n{first_n_lines}'
         return ScriptExecutionResponse(None, None, msg)
-
+    elif script_post_result.status_code == 504:
+        msg = (f'Received HTTP504 Gateway Timeout Error after {int(script_post_result.elapsed.total_seconds())}s while '
+               f'executing POST with script to execute in {execute_address}. '
+               f'\nAdd loggers to your script and check result in Hybris logs')
+        return ScriptExecutionResponse(None, None, msg)
     result_json = script_post_result.json()
     logging.debug(result_json)
 
