@@ -28,6 +28,7 @@ CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'SiteMapPage': 'code',
                                    'SolrEndpointUrl': 'url',
                                    'OrderEntry': 'product',
+                                   'PatchExecution': 'patchId',
                                    # 'CatalogVersion': 'catalog',
                                    }
 
