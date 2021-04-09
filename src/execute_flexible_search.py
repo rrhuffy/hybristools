@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ExecuteFlexibleSearchException: Received HTTP500 error doesn't mean you won't know why it happened
+# To figure out what's wrong with flexible search enable verbose errors and execute flexible search query in groovy:
+# setparametertemporary flexible.search.exception.show.query.details true
+# xg "flexibleSearchService.search('select {page},CONCAT({components1}) from {PflJspIncludeComponent} where {components1} is not null group by {page} order by {page}')"
+# maybe ask if need to enable verbose errors and rerun query in groovy to see why error happened?
+
+# TODO: pipe-aware result printing to avoid BrokenPipeError: [Errno 32] Broken pipe
+
 # TODO: further refactor: method's arguments (especially passing 'args')
 
 # TODO: extract removing empty columns (without checking first row == column name) into a separate script
