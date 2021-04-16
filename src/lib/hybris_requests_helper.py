@@ -91,8 +91,11 @@ def _internal_log_in(address, credentials, session, address_to_cookies_map):
     try:
         login_csrf_token = re.search(r'name="_csrf"\s+value="(.+?)"\s*/>', login_get_result.text).group(1)
     except AttributeError:
-        logging.error(f'Cannot find _csrf in url: "{address}", status: {login_get_result.status_code}, '
-                      f'printing html:\n{login_get_result.text}')
+        if '503: This service is down for maintenance' in login_get_result.text or 'SAP Commerce Cloud - Maintenance' in login_get_result.text:
+            logging.error('This service is down for maintenance')
+        else:
+            logging.error(f'Cannot find _csrf in url: "{address}", status: {login_get_result.status_code}, '
+                          f'printing html:\n{login_get_result.text}')
         sys.exit(1)
 
     login_data = {'j_username': credentials['user'], 'j_password': credentials['password'], '_csrf': login_csrf_token,
