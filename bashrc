@@ -39,7 +39,7 @@ iimhmc() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_i
 getclipboard() { xclip -selection clipboard -o; }
 xgc() { xg "$(getclipboard)" "$@"; }
 xfc() { xf "$(getclipboard)" "$@"; }
-iic() { ii "$(getclipboard)" "$@"; }
+iic() { getclipboard && ii "$(getclipboard)" "$@"; }
 
 xfa() { xf "Select * from {$1}" "${@:2}"; }
 xfaw() { xf "Select * from {$1} where {$2} = '$3'" "${@:4}"; }
@@ -48,6 +48,7 @@ xfawr() { xf "Select * from {$1} where {$2} regexp '$3'" "${@:4}"; }
 xfs()  { xf "Select {$1} from {$2}" "${@:3}"; }
 solrgetindexes() { xf --data "select {name} from {SolrFacetSearchConfig}"; }
 checkpatchexecutionstatus() { xf "select {patchid},{executiontime},{executionstatus} from {PatchExecution} where {rerunnable}=0 order by {executiontime} desc" $@; }
+checklastpatchwitherror() { xf "select {creationtime},{name} from {PatchExecutionUnit} where {executionStatus} in ({{select {pk} from {ExecutionStatus} where {code}='ERROR'}}) order by {executiontime} desc" --width=1234|fill; }
 
 # show all known data about Item: types inheritance, all fields with relations and 20 example items
 all() { types "$1" && sid "$1" && xfa "$1" 20; }
@@ -174,6 +175,7 @@ hsi() {
     xgr $PROJECTS_DIR/hybristools/groovy/showItem.groovy --parameters "$1" "$2" "$3" $'\36' \
         | $unroll_or_dummy \
         | debuginfowarnerrortostderr \
+        | sed -E '/^\{.*\}$/d' \
         | multiline_tabulate - 123456 --csv-delimiter=$'\36' ${remaining_arguments}
 }
 hsipk() { hsi Item PK "$@"; }
