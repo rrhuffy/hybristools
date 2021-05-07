@@ -11,6 +11,7 @@ import inspect
 import logging
 import re
 
+import requests
 import sys
 
 from lib import argparse_helper
@@ -71,7 +72,12 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
 
         flex_data = {'flexibleSearchQuery': item_pk_to_type_query, '_csrf': csrf_token_,
                      'maxCount': len(item_pk_set), 'user': user, 'locale': 'en', 'commit': True}
-        flex_post_result = session_.post(address + '/console/flexsearch/execute', data=flex_data)
+        try:
+            flex_post_result = session_.post(address + '/console/flexsearch/execute', data=flex_data)
+        except requests.exceptions.ChunkedEncodingError:
+            logging.error(f"ChunkedEncodingError while sending POST to {address + '/console/flexsearch/execute'}")
+            return []
+
         result_json = flex_post_result.json()
         result_list_item_pk_to_type = result_json['resultList']
         logging.debug(f'result_json[result_list_item_pk_to_type] = {result_list_item_pk_to_type}')
