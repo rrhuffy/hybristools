@@ -1,6 +1,7 @@
 import logging
 import re
 
+import keyring
 import requests
 import sys
 from keepasshttplib import keepasshttplib
@@ -31,7 +32,10 @@ def return_csrf_if_session_is_valid(session, url):
         try:
             csrf = re.search(r'name="_csrf"\s+value="(.+?)"\s*/>', text).group(1)
         except AttributeError:
-            print(f'Cannot find _csrf in:\n{text}')
+            if '503: This service is down for maintenance' in text or 'SAP Commerce Cloud - Maintenance' in text:
+                logging.error('This service is down for maintenance')
+            else:
+                logging.error(f'Cannot find _csrf in url {url}:\n{text}')
         return csrf
     else:
         return None
@@ -74,6 +78,9 @@ def get_credentials_from_keepass_if_empty(address, credentials):
             credentials['user'], credentials['password'] = keepasshttplib_client.get_credentials(address)
         except (IndexError, TypeError):
             logging.error(f'Cannot find credentials for {address}')
+            sys.exit(1)
+        except keyring.errors.NoKeyringError:
+            logging.error('Cannot find available keyring backend')
             sys.exit(1)
         finally:
             requests_helper.enable_proxy()
