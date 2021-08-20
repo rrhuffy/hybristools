@@ -98,7 +98,7 @@ echo "Expecting: " && xf "select {pk} from {RendererTemplate} where {code}='Defa
 
 DEBUG = 0
 PRINT_TO_LOGS = 0
-USE_JALO_AND_DYNAMIC_HANDLER = 1 // this handler is slow, because it is not using Flexible Search queries, it calls getters on groovy side instead
+USE_JALO_AND_DYNAMIC_HANDLER = 0 // this handler is slow, because it is not using Flexible Search queries, it calls getters on groovy side instead
 TYPE_BLACKLIST = ["ItemSyncTimestamp", "ModifiedCatalogItemsView", "ItemTargetVersionView", "ItemSourceVersionView"] as Set
 
 pkToSearchAsString = '''$1'''
