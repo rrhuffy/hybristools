@@ -21,8 +21,8 @@ http://www.wtfpl.net/ for more details.
 
 import argparse
 import collections
-import fileinput
 import os
+
 import sys
 
 
@@ -337,7 +337,7 @@ def main():
     chars = SafeChars
 
     if (args.encoding == 'utf-8' or
-        args.encoding == 'auto' and sys.stdout.encoding == 'UTF-8'):
+        args.encoding == 'auto' and sys.stdout.encoding.lower() == 'UTF-8'.lower()):
         # Switch to UTF-8 Chars
         chars = Chars
 
