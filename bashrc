@@ -89,12 +89,22 @@ yfa() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy -
 
 removeitem() {
     if [[ -z "$1" ]]; then
-        echo "Usage: removeitem Type qualifier itemToDelete"
+        echo "Usage: removeitem Type qualifier uniqueValue"
         return 1
     fi
 
     ii "REMOVE $1;$2[unique=true]\n;$3" "${@:4}";
 }
+
+removeitemwithduplicates() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: removeitemwithduplicates Type qualifier uniqueOrNotValue"
+        return 1
+    fi
+
+    ii "REMOVE $1[batchmode=true];itemType(code)[unique=true];$2[unique=true]\n;$1;$3";
+}
+
 
 removeallitems() {
     if [[ -z "$1" ]]; then
