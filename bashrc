@@ -39,7 +39,7 @@ iimhmc() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_i
 getclipboard() { xclip -selection clipboard -o; }
 xgc() { xg "$(getclipboard)" "$@"; }
 xfc() { xf "$(getclipboard)" "$@"; }
-iic() { getclipboard && ii "$(getclipboard)" "$@"; }
+iic() { getclipboard && echo && ii "$(getclipboard)" "$@"; }
 
 xfa() { xf "Select * from {$1}" "${@:2}"; }
 xfaw() { xf "Select * from {$1} where {$2} = '$3'" "${@:4}"; }
@@ -73,7 +73,7 @@ setparametertemporarywithequals() {
         echo "Cannot find pattern: $pattern"
     fi
 }
-getparameter() { xg "de.hybris.platform.util.Config.getParameter('$1')"; }
+getparameter() { xg "de.hybris.platform.util.Config.getParameter('$1')" "${@:2}"; }
 types() { xgr $PROJECTS_DIR/hybristools/groovy/types.groovy "${@:2}" --parameters "$1" | treepywithoutcolor; }
 typesin() { xgr $PROJECTS_DIR/hybristools/groovy/typesin.groovy "${@:2}" --parameters "$1" | treepywithoutcolor; }
 typesout() { xgr $PROJECTS_DIR/hybristools/groovy/types.groovy "${@:2}" --parameters "$1" | perl -pe "s/^.*?$1/$1/g" | treepywithoutcolor; }
@@ -113,6 +113,15 @@ removeallitems() {
     fi
 
     ii "REMOVE $1[batchmode=true];itemType(code)[unique=true]\n;$1" "${@:2}";
+}
+
+updateitem() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: updateitem typeToUpdate qualifierNameToFind qualifierValue fieldNameToSet valueToSet"
+        return 1
+    fi
+
+    ii "UPDATE $1;$2[unique=true];$4\n;$3;$5" "${@:6}";
 }
 
 updateallitems() {
