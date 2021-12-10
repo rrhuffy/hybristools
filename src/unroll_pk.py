@@ -29,6 +29,7 @@ CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'SiteMapPage': 'code',
                                    'SolrEndpointUrl': 'url',
                                    'OrderEntry': 'product',
+                                   'CartEntry': 'product',
                                    'PatchExecution': 'patchId',
                                    # 'CatalogVersion': 'catalog',
                                    }
@@ -76,6 +77,11 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
             flex_post_result = session_.post(address + '/console/flexsearch/execute', data=flex_data)
         except requests.exceptions.ChunkedEncodingError:
             logging.error(f"ChunkedEncodingError while sending POST to {address + '/console/flexsearch/execute'}")
+            return []
+
+        if 500 <= flex_post_result.status_code <= 599:
+            logging.error(f'Could not get pk to item type mapping, received status {flex_post_result.status_code} '
+                          f'when executed {item_pk_to_type_query}')
             return []
 
         result_json = flex_post_result.json()
