@@ -8,11 +8,16 @@ from lib import hybris_requests_helper
 from lib import logging_helper
 from lib import requests_helper
 
+# sets (temporarily) a logger to requested level
+# if you want to set a permanent logger level add to local.properties lines like below:
+# log4j2.logger.someUniqueName.name = org.springframework.integration
+# log4j2.logger.someUniqueName.level = INFO
+
 parser = argparse.ArgumentParser('Script that changes log4j2 logger levels')
 hybris_argparse_helper.add_hybris_hac_arguments(parser)
 logging_helper.add_logging_arguments_to_parser(parser)
 parser.add_argument('logger', help='logger name')
-parser.add_argument('level', help='logger level', choices=['ALL', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'TRACE'])
+parser.add_argument('level', help='logger level', choices=['ALL', 'OFF', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'TRACE'])
 args = parser.parse_args()
 
 logging.debug(f'Changing logger {args.logger} level to {args.level}')
