@@ -75,7 +75,14 @@ def get_credentials_from_keepass_if_empty(address, credentials):
         logging.debug(f'No credentials provided, trying to fetch them for {address}')
         try:
             requests_helper.disable_proxy()
-            credentials['user'], credentials['password'] = keepasshttplib_client.get_credentials(address)
+
+            # getting credentials before adding / at end to avoid weird library bug with one of urls...
+            # python3 -c "from keepasshttplib import keepasshttplib;keepasshttplib.Keepasshttplib().get_credentials(x)"
+            # not working with some URLs, but with added/removed / at end it is starting working again...
+            try:
+                credentials['user'], credentials['password'] = keepasshttplib_client.get_credentials(address)
+            except KeyError:
+                credentials['user'], credentials['password'] = keepasshttplib_client.get_credentials(address.rstrip('/'))
         except (IndexError, TypeError):
             logging.error(f'Cannot find credentials for {address}')
             sys.exit(1)
