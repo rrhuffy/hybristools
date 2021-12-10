@@ -8,6 +8,8 @@ import requests
 def get_session():
     requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
     session = requests.sessions.Session()
+    # pretend_to_be_curl(session)
+    # pretend_to_be_firefox(session)
     proxy = os.environ.get('HTTPS_PROXY')
     if proxy:
         session.proxies = {
@@ -28,6 +30,14 @@ def get_session_with_basic_http_auth_and_cleaned_address(address):
         address = match.group(1) + match.group(4)
         logging.debug(f'Address after extraction: "{address}"')
     return session, address
+
+
+def pretend_to_be_curl(session):
+    session.headers['User-Agent'] = 'curl/7.54.1'
+
+
+def pretend_to_be_firefox(session):
+    session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0'
 
 
 def disable_proxy():
