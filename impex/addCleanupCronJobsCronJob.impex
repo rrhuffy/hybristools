@@ -1,0 +1,24 @@
+# WARNING! This should be run when setting up a server for a first time.
+# If you want to run that on a server that is working for a while then you'll need to 
+# check if that won't crash your instance due to too many items to cleanup.
+
+# Import (and automatically run) by:
+# ii $PROJECTS_DIR/hybristools/impex/addCleanupCronJobsCronJob.impex
+
+# Check if it has ended:
+# hsi CronJob code cleanupCronJobsCronJob -A | pee 'grep status' 'grep result' 'grep startTime' 'grep endTime'
+
+INSERT_UPDATE MaintenanceCleanupJob; code[unique = true]; springId[unique = true]   ; searchType(code); threshold
+                                   ; cleanupCronJobsJob ; cleanupCronJobsPerformable; CronJob         ; 14
+
+# Non-SAP Cloud version, using nodeID set to 0 to use specific server number (used as a backoffice one, not frontoffice)
+INSERT_UPDATE CronJob; code[unique = true]   ; job(code)         ; nodeID; logToFile; sessionLanguage(isoCode)[default = en]
+                     ; cleanupCronJobsCronJob; cleanupCronJobsJob; 0     ; false    ;
+
+# SAP Cloud version, not using nodeID (because in production we have 2 nodes with random nodeID, currently 2 and 4), this will run on any backgroundProcessing node
+# INSERT_UPDATE CronJob; code[unique = true]   ; job(code)         ; logToFile; sessionLanguage(isoCode)[default = en]
+#                      ; cleanupCronJobsCronJob; cleanupCronJobsJob; false    ;
+
+INSERT_UPDATE Trigger; cronJob(code)[unique = true]; second; minute; hour; day; month; year; relative; active; maxAcceptableDelay
+#% afterEach: impex.getLastImportedItem().setActivationTime(new Date());
+                     ; cleanupCronJobsCronJob      ; 0     ; 0     ; 3   ; -1 ; -1   ; -1  ; false   ; true  ; -1

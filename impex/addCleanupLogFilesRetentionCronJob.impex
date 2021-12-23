@@ -1,0 +1,25 @@
+# import by:
+# ii $PROJECTS_DIR/hybristools/impex/addCleanupLogFilesRetentionCronJob.impex
+# this cronjob is meant to cleanup LogFile items once allowing cleanUpLogsCronJob to work on smaller items subset (otherwise it will cause OOM on 800k elements due to sorting in query)
+# that's why there is no trigger and you need to run manually it by:
+# runcronjob logFileCleanupCronJob
+
+# 12096000 = 140 days = 20 weeks = 4.5 month
+# 1209600 = 2 weeks in seconds
+# 604800 = 1 week in seconds
+# alternatively you can use FlexibleSearchRetentionRule
+#INSERT_UPDATE FlexibleSearchRetentionRule; code[unique=true]; searchQuery                                                                             ; actionReference         ; retentionTimeSeconds
+#                                         ; code             ; SELECT DISTINCT {pk} FROM {YourItemToClean} WHERE {modifiedTime} < ?CALC_RETIREMENT_TIME; basicRemoveCleanupAction; 259200
+
+INSERT_UPDATE AfterRetentionCleanupRule; code[unique = true]; retirementItemType(code); itemFilterExpression                                                                       ; actionReference          ; retentionTimeSeconds; retirementDateAttribute(enclosingType(code), qualifier)
+                                       ; logFileCleanupRule ; LogFile                 ; {owner} in ({{select {pk} from {CronJob} where {code}='update-backofficeIndex-CronJob' }}) ; basicRemoveCleanupAction ; 1209600             ; LogFile:creationtime
+
+INSERT_UPDATE RetentionJob; code[unique = true]; retentionRule(code); batchSize
+                          ; logFileCleanupJob  ; logFileCleanupRule ; 1000
+
+INSERT_UPDATE CronJob; code[unique = true]  ; job(code)         ; sessionLanguage(isoCode)[default = en]
+                     ; logFileCleanupCronJob; logFileCleanupJob ;
+
+# CronJob Triggers set to run every day at midnight
+#INSERT_UPDATE Trigger; cronJob(code)[unique = true]; cronExpression
+#                     ; logFileCleanupCronJob       ; 0 0 0 * * ?

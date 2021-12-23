@@ -1,0 +1,54 @@
+# This is archived (but working) groovy version for removing many items using one script
+# For future check addCleanupLogFilesRetentionCronJob.impex which is doing the same, but on Java side (and you can abort that etc.)
+
+# import by:
+# ii $PROJECTS_DIR/hybristools/impex/addCleanupLogFilesScriptCronJob.impex
+# this script is meant to cleanup LogFile items once allowing cleanUpLogsCronJob to work on smaller items subset (otherwise it will cause OOM on 800k elements due to sorting in query)
+# that's why there is no trigger and you need to run manually it by:
+# runcronjob cleanupLogFilesScriptCronJob
+
+INSERT_UPDATE Script; code[unique = true]  ; scriptType(code); active[unique = true]; content
+                    ; cleanupLogFilesScript; GROOVY          ; true                 ; "
+//DATE_TO_COMPARE = java.time.LocalDateTime.now().minus(604800, java.time.temporal.ChronoUnit.SECONDS).toLocalDate().toString()
+//DATE_TO_COMPARE = java.time.LocalDate.now().minus(1, java.time.temporal.ChronoUnit.MONTHS).toString()
+DATE_TO_COMPARE = java.time.LocalDate.now().minus(14, java.time.temporal.ChronoUnit.DAYS).toString()
+// DATE_TO_COMPARE = '2021-04-15' // to get today minus 14 days in bash execute: date -d -14days +%Y-%m-%d
+
+// flexibleSearchQueryString = ""select {pk} from {LogFile} where {creationtime} < '$DATE_TO_COMPARE'""
+flexibleSearchQueryString = ""select {pk} from {LogFile} where {creationtime} < '$DATE_TO_COMPARE' and {owner} in ({{select {pk} from {CronJob} where {code}='update-backofficeIndex-CronJob' }})""
+flexibleSearchQuery = new de.hybris.platform.servicelayer.search.FlexibleSearchQuery(flexibleSearchQueryString)
+flexibleSearchQuery.setCount(cronjob.queryCount)
+
+searchResult = flexibleSearchService.search(flexibleSearchQuery).result
+modelService.removeAll(searchResult)
+
+logger = org.apache.log4j.Logger.getLogger(de.hybris.platform.jobs.ScriptingJobPerformable.class)
+
+// remove own cron job history entries because it'll be running multiple times and we don't want history for each run (results will stay in logs)
+modelService.removeAll(cronjob.cronJobHistoryEntries)
+
+// rerun task if there may be more results
+if (searchResult.size() == cronjob.queryCount) {
+    logger.info(""Removed ${searchResult.size()} results older than $DATE_TO_COMPARE which is equal to query limit of ${cronjob.queryCount} = there may be more results, re-running task ASAP"")
+    if (cronjob.triggers.size() >= 1) {
+        trigger = cronjob.triggers.get(0)
+    } else {
+        logger.info(""There is no trigger attached to this cronjob, creating dummy one to set activation time"")
+        trigger = modelService.create(de.hybris.platform.cronjob.model.TriggerModel.class)
+        trigger.setCronJob(cronjob)
+        trigger.setYear(0)
+        cronjob.triggers = java.util.Collections.singletonList(trigger)
+        modelService.save(cronjob)
+    }
+    trigger.setActivationTime(new java.util.Date(java.lang.System.currentTimeMillis()+10*1000))
+    modelService.save(trigger)
+} else {
+    logger.info(""Removed ${searchResult.size()} results older than $DATE_TO_COMPARE which is less than query limit of ${cronjob.queryCount} = all done in this iteration, next iteration will run based on a standard trigger: ${cronjob.getTimeTable().replace('\n',' ')}"")
+}
+"
+
+INSERT_UPDATE ScriptingJob; code[unique = true]     ; scriptURI
+                          ; cleanupLogFilesScriptJob; model://cleanupLogFilesScript
+
+INSERT_UPDATE CronJob; code[unique = true]         ; job(code)               ; logToFile; nodeID; queryCount; sessionLanguage(isoCode)[default = en]
+                     ; cleanupLogFilesScriptCronJob; cleanupLogFilesScriptJob; false    ; 0     ; 1000

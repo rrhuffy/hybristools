@@ -1,0 +1,33 @@
+# WARNING! This should be run when setting up a server for a first time.
+# If you want to run that on a server that is working for a while then you'll need to 
+# check if that won't crash your instance due to too many items to cleanup.
+
+# First check how many LogFiles have your biggest CronJob:
+# xf "select {owner}, count({pk}) from {LogFile} group by {owner} having count({pk}) > 1 order by count({pk}) desc"
+# If that's something like 20k then it is OK (that's the amount of LogFile created by update-backofficeIndex-CronJob
+# in 14 days when starting every minute). If you see a much bigger numbers (like 800k) then below query will cause OOM:
+# xf "select {pk} from {LogFile} where {owner} in ({{select {pk} from {CronJob} where {code}='update-backofficeIndex-CronJob'}}) order by {creationtime}"
+# And query above is used in CleanUpLogsStrategy. In that case you'll need to remove entries using a job from impex below:
+# addCleanupLogFilesRetentionCronJob.impex
+# And then run this impex to enable cronjob for removing old cronjob logs
+
+# Import (and automatically run) by:
+# ii $PROJECTS_DIR/hybristools/impex/addCleanupLogsJobCronJob.impex
+
+# Before running other cleaning cronJobs (like cleanupCronJobsCronJob) check if it has ended:
+# hsi CronJob code cleanupLogsCronJob -A | pee 'grep status' 'grep result' 'grep startTime' 'grep endTime'
+
+INSERT_UPDATE MaintenanceCleanupJob; code[unique = true]; springId[unique = true]
+                                   ; cleanupLogsJob     ; cleanUpLogsJobPerformable
+
+# Non-SAP Cloud version, using nodeID set to 0 to use specific server number (used as a backoffice one, not frontoffice)
+# INSERT_UPDATE CronJob; code[unique = true]; job(code)     ; nodeID; logToFile; sessionLanguage(isoCode)[default = en]
+#                      ; cleanupLogsCronJob ; cleanupLogsJob; 0     ; false    ;
+
+# SAP Cloud version, not using nodeID (because in production we have 2 nodes with random nodeID, currently 2 and 4), this will run on any backgroundProcessing node
+INSERT_UPDATE CronJob; code[unique = true]; job(code)     ; logToFile; sessionLanguage(isoCode)[default = en]
+                     ; cleanupLogsCronJob ; cleanupLogsJob; false    ;
+
+INSERT_UPDATE Trigger; cronJob(code)[unique = true]; second; minute; hour; day; month; year; relative; active; maxAcceptableDelay
+#% afterEach: impex.getLastImportedItem().setActivationTime(new Date());
+                     ; cleanupLogsCronJob          ; 0     ; 0     ; 2   ; -1 ; -1   ; -1  ; false   ; true  ; -1
