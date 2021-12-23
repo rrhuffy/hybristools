@@ -2,6 +2,10 @@
 
 // TODO: wait for --group in multiline_tabulate to compare items in collections regardless of order
 
+// TODO: in case of:
+// Cannot find exactly one Item with type Product with code = 8738210332 in both Staged (2) and Online version (2)
+// catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search("select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk} and {c.id}='ProductCatalog'}").result)
+
 separator = '$4'
 blacklist = ['itemModelContext', 'tenantId', 'class']
 
