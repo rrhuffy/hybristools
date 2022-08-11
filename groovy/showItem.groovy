@@ -15,9 +15,9 @@ def getItemsInOnlineIfPossible(type, qualifier, value, maxReturnedItems=3) {
     // if item has "catalogVersion" attribute then remove ones with Staged version
     filteredResult = originalResult.findAll{ !it.hasProperty('catalogVersion') || it.catalogVersion.version != 'Staged' }
     if (filteredResult.size() > 1 && filteredResult.size() < 5) {
-        println "WARN: ${filteredResult.size()} elements found after filtering out Staged ones (from all ${originalResult.size()}), printing all of them..."
+        println "WARN: ${filteredResult.size()} elements found after filtering out Staged ones (from all ${originalResult.size()}), printing all of them:"
     } else if (filteredResult.size() > 5) {
-        println "WARN: ${filteredResult.size()} elements found after filtering out Staged ones (from all ${originalResult.size()}), printing first $maxReturnedItems of them..."
+        println "WARN: ${filteredResult.size()} elements found after filtering out Staged ones (from all ${originalResult.size()}), printing first $maxReturnedItems of them:"
         filteredResult = filteredResult[0..maxReturnedItems-1]
     }
     // println "DEBUG: Filtered results from ${originalResult.size()} to ${filteredResult.size()}"
@@ -77,6 +77,9 @@ def printSingleFieldValueIfNeeded(fieldName, fieldValue, locale = null, separato
 
     fieldValue = unrollField(fieldName, fieldValue)
     safeTextValue = cleanTextForPrint(fieldValue.toString())
+    if (fieldValue instanceof java.util.Collection) {
+        fieldName = fieldName + "(${fieldValue.size()})"
+    }
 
     if (locale != null) {
         println "$fieldName[$locale]$separator${safeTextValue}"
@@ -121,14 +124,14 @@ def printEverythingForThisItem(item) {
 
             if (method.parameterTypes.size() == 0) {
                 // this doesn't have any parameters (looking for parameter-less methods with name "get*" or "is*")
-                value = method.invoke(item, null)
+                value = tryToInvoke(method, item, null)
                 if (shouldUseThisField(value)) {
                     nonlocalizedFields.add([fieldName, value])
                 }
             } else if (method.parameterTypes.size() == 1 && method.parameterTypes[0].getTheClass() == java.util.Locale.class) {
                 // Locale is the only parameter then it is localized field
                 defaultLocalizationService.getSupportedDataLocales().each { locale ->
-                    value = method.invoke(item, locale)
+                    value = tryToInvoke(method, item, locale)
                     if (shouldUseThisField(value)) {
                         localizedFields.add([fieldName, value, locale])
                     }
@@ -175,6 +178,15 @@ def printEverythingForThisItem(item) {
     }
 
     getItemsReferencingThisOne(item)
+}
+
+def tryToInvoke(method, item, locale) {
+    try {
+        return method.invoke(item, locale)
+    } catch (java.lang.Exception e) {
+        println "WARN: Caught $e when called ${method.name}"
+        return "[$e]"
+    }
 }
 
 items = getItemsInOnlineIfPossible("$1", "$2", "$3")
