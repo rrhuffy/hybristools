@@ -64,10 +64,14 @@ def execute_script(script, script_type, rollback, address, user, password, sessi
     logging.debug('done, printing results:')
     if script_post_result.status_code == 500:
         bs = BeautifulSoup(script_post_result.text, 'html.parser')
-        html = bs.find('textarea').text
-        number_of_lines_to_show = 20
-        first_n_lines = '\n'.join(html.strip().split('\n')[0:number_of_lines_to_show])
-        msg = f'Received HTTP500, printing first {number_of_lines_to_show} lines of result:\n{first_n_lines}'
+        textarea = bs.find('textarea')
+        if textarea:
+            html = textarea.text
+            number_of_lines_to_show = 20
+            first_n_lines = '\n'.join(html.strip().split('\n')[0:number_of_lines_to_show])
+            msg = f'Received HTTP500, printing first {number_of_lines_to_show} lines of result:\n{first_n_lines}'
+        else:
+            msg = f'Received HTTP500'
         return ScriptExecutionResponse(None, None, msg)
     elif script_post_result.status_code == 504:
         msg = (f'Received HTTP504 Gateway Timeout Error after {int(script_post_result.elapsed.total_seconds())}s while '
