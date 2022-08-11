@@ -23,7 +23,8 @@ parser.add_argument('query', nargs='?', default='*:*', help='Query to execute, b
 parser.add_argument('--index', default='.', help='Regex with index to use, case insensitive, default "." == any index')
 # TODO: maybe find solr address by using HAC (from ENV)? solrserver.instances.standalone.* and *.endpoint properties
 parser.add_argument('--address',
-                    default=os.environ.get('HYBRIS_HAC_URL').replace('/hac', '').replace(':9002', ':8983'),
+                    default=os.environ.get('HYBRIS_SOLR_URL') if os.environ.get('HYBRIS_SOLR_URL') else
+                    os.environ.get('HYBRIS_HAC_URL').replace('/hac', '').replace(':9002', ':8983'),
                     help='SOLR address, by default: HYBRIS_HAC_URL with removed /hac suffix and changed 9002 into 8983')
 parser.add_argument('--user', default='solrserver', help='User to log into SOLR, by default solrserver')
 parser.add_argument('--password', default='server123', help='Password to use to log into SOLR, by default server123')
