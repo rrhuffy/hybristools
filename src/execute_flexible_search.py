@@ -31,7 +31,8 @@ from lib import requests_helper
 from lib import shell_helper
 
 COLUMN_BLACKLIST = {'hjmpTS', 'createdTS', 'modifiedTS', 'TypePkString', 'OwnerPkString', 'aCLTS', 'propTS'}
-DEFAULT_ENTRIES_LIMIT = shell_helper.get_terminal_height() - 3
+# TODO: use ENV var or 0 as a default value
+DEFAULT_ENTRIES_LIMIT = shell_helper.get_terminal_height() - 4
 
 
 class ExecuteFlexibleSearchException(Exception):
@@ -184,7 +185,7 @@ def _handle_cli_arguments():
     # TODO: expand checking PK to all blacklisted by default columns
     query_lower = args.query.lower()
     is_pk_between_select_and_from = query_lower.find('select') < query_lower.find('pk') < query_lower.find('from')
-    if not args.no_blacklist and 'creation' not in args.query and (
+    if not args.no_blacklist and 'creation' not in args.query and 'modified' not in args.query and (
             'pk' not in args.query or not is_pk_between_select_and_from):
         args.ignore_columns = f'{args.ignore_columns},' + ','.join(COLUMN_BLACKLIST)
 
