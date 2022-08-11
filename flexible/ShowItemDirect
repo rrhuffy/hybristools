@@ -21,7 +21,9 @@ select distinct * from
             when 'ComposedType' then '1'
             when 'CollectionType' then '*'
             else '1'
-        end as C
+        end as C,
+        {ad.attributeHandler} as AH,
+        {ad.modifiers}&32=32 as PO
     from
     {
         AttributeDescriptor as ad
