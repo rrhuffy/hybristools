@@ -175,7 +175,7 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
                             current_type_name = type_pk_to_type_name_dict[type_pk]
                             current_qualifier = type_pk_to_qualifier_dict[type_pk]
                             logging.debug(f'Type "{current_type_name}" has already qualifier '
-                                          '"{current_qualifier}" but it will now be overridden by "{qualifier}"')
+                                          f'"{current_qualifier}" but it will now be overridden by "{qualifier}"')
 
                         type_pk_to_qualifier_dict[type_pk] = qualifier
 
@@ -187,6 +187,8 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
                 # This is not working on HANA (b2bpprodweb01)
                 # xf "SELECT * FROM ({{SELECT {PK}, {code} FROM {Media} WHERE {PK} = '8802523611166'}} UNION ALL {{SELECT {PK}, {catalogVersion} FROM {ProductBrandSpecificContent} WHERE {PK} = '8796096277245'}}) uniontable"
                 subquery_template = "{{{{SELECT {{PK}}, {{{qualifier}}} FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
+                # example for MSSQL (but then it won't work in MySQL...)
+                # subquery_template = "{{{{SELECT {{PK}}, CONVERT(CHAR, {{{qualifier}}}) as v FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
                 subquery_template_list = list()
                 for item_pk, type_pk in item_pk_to_type_pk_dict.items():
                     try:
