@@ -1,5 +1,6 @@
 # set default values if they are not set
 export HYBRIS_HAC_URL=${HYBRIS_HAC_URL:-https://localhost:9002/hac}
+export HYBRIS_SOLR_URL=${HYBRIS_SOLR_URL:-http://localhost:8983}
 export HYBRIS_USER=${HYBRIS_USER-admin}
 export HYBRIS_PASSWORD=${HYBRIS_PASSWORD-nimda}
 export PROJECTS_DIR=${PROJECTS_DIR:-/mnt/c/Projects}
@@ -46,15 +47,32 @@ xfaw() { xf "Select * from {$1} where {$2} = '$3'" "${@:4}"; }
 xfawl() { xf "Select * from {$1} where {$2} like '$3'" "${@:4}"; }
 xfawr() { xf "Select * from {$1} where {$2} regexp '$3'" "${@:4}"; }
 xfs()  { xf "Select {$1} from {$2}" "${@:3}"; }
-solrgetindexes() { xf --data "select {name} from {SolrFacetSearchConfig}"; }
+xfcount() { xf "Select count(*) as ${1}Count from {$1}" "${@:2}"; }
 checkpatchexecutionstatus() { xf "select {patchid},{executiontime},{executionstatus} from {PatchExecution} where {rerunnable}=0 order by {executiontime} desc" $@; }
 checklastpatchwitherror() { xf "select {creationtime},{name} from {PatchExecutionUnit} where {executionStatus} in ({{select {pk} from {ExecutionStatus} where {code}='ERROR'}}) order by {executiontime} desc" --width=1234|fill; }
 
 # show all known data about Item: types inheritance, all fields with relations and 20 example items
 all() { types "$1" && sid "$1" && xfa "$1" 20; }
 
-solrfullindex() { xg "indexerService.performFullIndex(facetSearchConfigService.getConfiguration('${1:-${PROJECT_PREFIX_LONG_LOWERCASE}Index}'))" "${@:2}"; }
-solrupdate() { xg "indexerService.updateIndex(facetSearchConfigService.getConfiguration('${1:-${PROJECT_PREFIX_LONG_LOWERCASE}Index}'))" "${@:2}"; }
+solrgetindexes() { xf --data "select {name} from {SolrFacetSearchConfig}"; }
+solrfullindex() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: solrfullindex indexName"
+        echo "To get index names use: solrgetindexes"
+        return 1
+    fi
+    xg "indexerService.performFullIndex(facetSearchConfigService.getConfiguration('$1'))" "${@:2}";
+}
+
+solrupdate() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: solrupdate indexName"
+        echo "To get index names use: solrgetindexes"
+        return 1
+    fi
+    xg "indexerService.updateIndex(facetSearchConfigService.getConfiguration('$1'))" "${@:2}";
+}
+
 ychecksolrindexercronjobs() { xf "select {code},{starttime},{endtime},{facetsearchconfig},{indexeroperation},{status},{result},{sessionuser} from {SolrIndexerCronJob} order by {starttime} desc" -a "$@"; }
 # this is working up to about ~1905, then SAP disabled JMX in default tomcat configuration
 restarthybrisserver() { xg "de.hybris.platform.jmx.JmxClient.restartWrapper(new File('../../../../data/hybristomcat.java.pid').text as Integer);"; }
@@ -62,8 +80,6 @@ xgsetonline() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSear
 xgsetstaged() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk} and {cv.version}='Staged'}\").result)"; }
 xgsetall() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk}}\").result)"; }
 runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),true)"; }
-synchronizeproductcatalog() { xg $PROJECTS_DIR/hybristools/groovy/synchronizeCatalog.groovy --parameters $PROJECT_PREFIX_LONG_LOWERCASE Product; }
-synchronizecontentcatalog() { xg $PROJECTS_DIR/hybristools/groovy/synchronizeCatalog.groovy --parameters $PROJECT_PREFIX_LONG_LOWERCASE Content; }
 setparametertemporary() { xg "de.hybris.platform.util.Config.setParameter('$1','$2');"; }
 setparametertemporarywithequals() {
     pattern='^(.+)\s*=\s*(.+)$'
@@ -80,6 +96,7 @@ typesout() { xgr $PROJECTS_DIR/hybristools/groovy/types.groovy "${@:2}" --parame
 
 logallwait() { sl root DEBUG && echo "Logger root changed to DEBUG" && read -p "Press Enter to continue" && echo && sl root INFO && echo "Logger root changed to INFO"; }
 logallcommand() { sl root DEBUG && echo "Logger root changed to DEBUG" && $@ && echo && sl root INFO && echo "Logger root changed to INFO"; }
+logallcleanlog() { egrep -v 'DefaultQueryPreprocessorRegistry|solr indexer thread|ThreadRegistry'; }
 
 si() { xf $PROJECTS_DIR/hybristools/flexible/ShowItem 99999 "${@:2}" --parameters "$1"; }
 sid() { xf $PROJECTS_DIR/hybristools/flexible/ShowItemDirect 99999 "${@:2}" --parameters "$1"; }
@@ -197,4 +214,27 @@ hsi() {
         | sed -E '/^\{.*\}$/d' \
         | multiline_tabulate - 123456 --csv-delimiter=$'\36' ${remaining_arguments}
 }
+
+hsiwithcustomscript() {
+    unroll_or_dummy=cat
+    remaining_arguments="${@:5}"
+    if [[ "$5" == "-a" ]]; then
+        unroll_or_dummy="unroll_pk - $5"
+        remaining_arguments="${@:6}"
+    elif [[ "$5" == "-A" ]]; then
+        # -A means no analyse, so don't execute unroll_pk, but swallow this argument
+        remaining_arguments="${@:6}"
+    else
+        # TODO: check what will happen when we want (now default) analyse long but we also want to pass another argument
+        unroll_or_dummy="unroll_pk -"
+    fi
+    # if using xgr with expect_keepass then instead of $'\36' use "'\36'" because it's adding another layer of wrapping...
+    xgr <(echo "$1"; cat $PROJECTS_DIR/hybristools/groovy/showItem.groovy) --parameters "$2" "$3" "$4" $'\36' \
+        | $unroll_or_dummy \
+        | debuginfowarnerrortostderr \
+        | sed -E '/^\{.*\}$/d' \
+        | multiline_tabulate - 123456 --csv-delimiter=$'\36' ${remaining_arguments}
+}
 hsipk() { hsi Item PK "$@"; }
+hsipkwithcustomscript() { hsiwithcustomscript "$1" Item PK "${@:2}"; }
+clearcache() { xg 'cacheRegionProvider.getRegions().each{it.clearCache()};net.sf.ehcache.CacheManager.ALL_CACHE_MANAGERS.each{it.clearAll()};de.hybris.platform.core.Registry.getCurrentTenant().getCache().clear();null'; }
