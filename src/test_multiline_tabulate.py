@@ -107,7 +107,7 @@ def test_get_header_and_data_from_string_parametrized(input_string, output):
 def test_missing_separator_in_last_line_bug():
     header_and_data = [['column1', 'column2', 'column3'],
                        ['value1', 'value2', 'value3']]
-    tabulated_text = multiline_tabulate(header_and_data, group=True, width=18, transpose=False)
+    tabulated_text = multiline_tabulate(header_and_data, group=True, width=18, transpose=False, use_colors=False)
     expected = f'''
 --------0---------
 1 column1|       1

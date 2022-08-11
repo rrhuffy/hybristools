@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+# TODO performance: printf 'h1\th2\nd1\td2' | python3 -m pyinstrument multiline_tabulate.py -
+
+# TODO --markdown argument to print tables for .md files
+# | h1 | h2 |
+# |----|----|
+# | v1 | v2 |
+
 # TODO: --group in multiline_tabulate to compare items in collections regardless of order
 
 # TODO: add counter for entries, so we'll see how many entries are there
@@ -27,7 +34,6 @@ import re
 from collections import defaultdict
 
 import sys
-from tqdm import tqdm
 
 from lib import argparse_helper
 from lib import logging_helper
@@ -148,6 +154,8 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
     else:
         print(f'Found {header_and_data_len} > {SHOW_PROGRESS_THRESHOLD}) '
               'elements to show (header and data), showing progress bar:')
+        # this is not executed often, so import it on demand
+        from tqdm import tqdm
         iterator = tqdm(enumerate(header_and_data), total=header_and_data_len)
 
     lines_so_far = 0
@@ -215,12 +223,16 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
             # return current buffer if next line will fill whole screen
             if limit_lines is not None and lines_so_far + 1 > limit_lines:
                 # print(f'ending because of limits2, {limit_lines}, {lines_so_far}')
+                if data_index == 0 and use_colors:
+                    output_buffer += shell_helper.get_underscore_end()
                 return output_buffer
 
             if number_of_lines_per_entry == 1:  # if using single line entries print full line
                 output_buffer += current_line
                 # fix for terminals that put \n if there is string (with length equal to terminal width) plus \n at end
                 if use_newlines or len(current_line) != terminal_width:
+                    if data_index == 0 and use_colors:
+                        output_buffer += shell_helper.get_underscore_end()
                     output_buffer += '\n'
                 lines_so_far += 1
             else:  # if using multi line entries print on each line: line number, space, inner text, space, line number
@@ -228,11 +240,10 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
                 right_line_number = str(line_number).rjust(inner_width - len(current_line) + line_numbers_size)
                 output_buffer += f'{left_line_number} {current_line} {right_line_number}'
                 if use_newlines:
+                    if data_index == 0 and use_colors:
+                        output_buffer += shell_helper.get_underscore_end()
                     output_buffer += '\n'
                 lines_so_far += 1
-
-        if data_index == 0 and use_colors:
-            output_buffer += shell_helper.get_underscore_end()
 
     return output_buffer
 
