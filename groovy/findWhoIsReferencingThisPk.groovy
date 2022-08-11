@@ -99,6 +99,8 @@ echo "Expecting: " && xf "select {pk} from {RendererTemplate} where {code}='Defa
 DEBUG = 0
 PRINT_TO_LOGS = 0
 USE_JALO_AND_DYNAMIC_HANDLER = 0 // this handler is slow, because it is not using Flexible Search queries, it calls getters on groovy side instead
+MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS = 1 * 1000
+abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions = []
 TYPE_BLACKLIST = ["ItemSyncTimestamp", "ModifiedCatalogItemsView", "ItemTargetVersionView", "ItemSourceVersionView"] as Set
 
 pkToSearchAsString = '''$1'''
@@ -163,6 +165,7 @@ allTypesToSearch.each { currentlySearchedType ->
     """)
     descriptorsQuery.setResultClassList([String,String,String,Boolean])
     descriptorsResults = flexibleSearchService.search(descriptorsQuery).result
+    // TODO: addresses uses owner, so they won't be found if we filter out checking that
     descriptorsResults = descriptorsResults.findAll { qualifier, code, type, isJaloOrDynamicField -> !(currentlySearchedType.code.equals("Item") && qualifier.equals("owner")) } // filter out searches in Item.owner
     /*
         firstType | qualifier | fieldType         | extension  | U | L | E | D | J | O | R | C
@@ -180,13 +183,27 @@ allTypesToSearch.each { currentlySearchedType ->
             if (!USE_JALO_AND_DYNAMIC_HANDLER) {
                 return
             }
+
             jaloOrDynamicQueryString = "select {pk} from {${code}}"
-            jaloOrDynamicQueryResult = flexibleSearchService.search(jaloOrDynamicQueryString).result
+            debug "jaloOrDynamicQueryString: ${jaloOrDynamicQueryString}"
+            try {
+                jaloOrDynamicQueryResult = flexibleSearchService.search(jaloOrDynamicQueryString).result
+            } catch (Exception e) {
+                println "WARN: Couldn't check $code type because of $e"
+                return
+            }
             debug "        Checking jalo/dynamic field in: ${code}.$qualifier (iterating through ${jaloOrDynamicQueryResult.size()} items)"
-            jaloOrDynamicQueryResult.each { itemToCheckInGroovy ->
+            timeStart = new java.util.Date().getTime();
+            for (int i=0; i<jaloOrDynamicQueryResult.size(); i++) {
+                itemToCheckInGroovy = jaloOrDynamicQueryResult.get(i)
+                if (new java.util.Date().getTime() - timeStart > MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS) {
+                    debug "            ${MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS}ms passed, aborting dynamic/jalo checks"
+                    abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.add("${code}.$qualifier(checked ${i}/${jaloOrDynamicQueryResult.size()})")
+                    break
+                }
                 propertyValue = itemToCheckInGroovy.getProperty(qualifier)
                 if (propertyValue == null) {
-                    return
+                    continue
                 }
 
                 if (propertyValue instanceof Collection) {
@@ -279,7 +296,14 @@ allTypesToSearch.each { currentlySearchedType ->
                 jaloOrDynamicCollectionQueryString = "select {pk} from {${typeToCheck}}"
                 jaloOrDynamicCollectionQueryResult = flexibleSearchService.search(jaloOrDynamicCollectionQueryString).result
                 debug "            Checking jalo/dynamic field in: ${typeToCheck}.$qualifierToCheck (iterating through ${jaloOrDynamicCollectionQueryResult.size()} items)"
-                jaloOrDynamicCollectionQueryResult.each { itemToCheckInGroovy ->
+                timeStart = new java.util.Date().getTime();
+                for (int i=0; i<jaloOrDynamicCollectionQueryResult.size(); i++) {
+                    itemToCheckInGroovy = jaloOrDynamicCollectionQueryResult.get(i)
+                    if (new java.util.Date().getTime() - timeStart > MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS) {
+                        debug "                ${MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS}ms passed, aborting dynamic/jalo checks"
+                        abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.add("${typeToCheck}.$qualifierToCheck(checked ${i}/${jaloOrDynamicCollectionQueryResult.size()})")
+                        break
+                    }
                     propertyValue = itemToCheckInGroovy.getProperty(qualifierToCheck)
                     if (propertyValue instanceof Collection) {
                         propertyValue.each { collectionEntry ->
@@ -383,6 +407,11 @@ if (resultsToPrint) {
     resultsToPrint.each {
         info it
     }
+}
+
+if (!abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.isEmpty()) {
+    println "WARN: Aborted ${abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.size()} jalo or dynamic checks because it took more than ${MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS} ms: ${abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.join(',')}"
+    abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.each{debug it}
 }
 
 null // avoid printing output and result when using execute_script.py
