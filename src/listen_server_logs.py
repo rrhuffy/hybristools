@@ -25,10 +25,16 @@ if os.name == 'nt':
 # - if changed: kill thread and start new with new log path
 # - if not: continue to next iteration of infinite loop (== do queue.get)
 
-CRITICAL_MESSAGES = ['<-- Wrapper Stopped', 'Context initialization failed']
+CRITICAL_MESSAGES = ['<-- Wrapper Stopped',
+                     'Context initialization failed',
+                     'SEVERE: Exception',
+                     'startup failed due to previous errors',
+                     'Error creating bean with name']
 
 
 def check_line(line, ignored_messages, context, exit_callback=None):
+    launching_triggered = False
+
     if context.print_from and not context.print_in_progress:
         match = re.search(context.print_from, line)
         if match:
@@ -69,6 +75,7 @@ def check_line(line, ignored_messages, context, exit_callback=None):
     if context.launching:
         match = re.search(r'\d{4}.*Launching a JVM.*', line)
         if match:
+            launching_triggered = True
             searched_text = match.group(0)
             logging.info(f'Found regex in {searched_text}')
             # if logging_helper.get_logging_level() <= logging_helper.LogLevel.INFO:
@@ -92,16 +99,18 @@ def check_line(line, ignored_messages, context, exit_callback=None):
                 exit_callback()
             sys.exit(0)
 
-    any_critical_found = False
-    for critical_message in CRITICAL_MESSAGES:
-        match = re.search(critical_message, line)
-        if match:
-            logging.critical(f'Found critical regex [{critical_message}] in line [{line.rstrip()}]')
-            any_critical_found = True
+    # check for critical messages only when server is launching (ignore errors happening during server shutdown)
+    if context.startup and (not context.launching or launching_triggered):
+        any_critical_found = False
+        for critical_message in CRITICAL_MESSAGES:
+            match = re.search(critical_message, line)
+            if match:
+                logging.critical(f'Found critical regex [{critical_message}] in line [{line.rstrip()}]')
+                any_critical_found = True
 
-    if any_critical_found:
-        logging.critical('Exiting because of error(s) above')
-        sys.exit(1)
+        if any_critical_found:
+            logging.critical('Exiting because of error(s) above')
+            sys.exit(1)
 
     if not (context.print_from and context.print_to) and not context.launching and not context.startup:
         match = re.search(context.regex, line)
@@ -198,8 +207,9 @@ def main():
                                context, exit_callback=lambda: tail.kill())
             except KeyboardInterrupt:
                 logging.info('Bye')
+                sys.exit(1)
     else:
-        logging.critical(f'Weird os found: {os.name}, exiting...')
+        logging.critical(f'Unsupported os found: {os.name}, exiting...')
         sys.exit(1)
 
 
