@@ -30,7 +30,8 @@ if (context == null) {
     try {
         bean = context.getBean(beanName)
         println "Found $beanName:\n$bean\n\nFields:"
-        bean.properties.each { println "$it.key -> $it.value" }
+        // filter out "beanFactory", because it has multiple irrelevant lines
+        bean.properties.findAll { it.key != "beanFactory" } .each { println "$it.key -> $it.value" }
         println "\nMethods:"
         bean.metaClass.methods*.name.sort().unique().each { println it }
     } catch (org.springframework.beans.factory.NoSuchBeanDefinitionException exc) {
