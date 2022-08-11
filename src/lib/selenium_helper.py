@@ -16,9 +16,9 @@ def create_firefox_webdriver(headless=False, implicit_wait_time=None):
 
     try:  # try automatized version if available
         from webdriver_manager.firefox import GeckoDriverManager
-        driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), firefox_options=options)
+        driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
     except ImportError:  # default version
-        driver = webdriver.Firefox(firefox_options=options)
+        driver = webdriver.Firefox(options=options)
 
     _common_create_webdriver(driver, implicit_wait_time)
 
