@@ -2,12 +2,11 @@ select
     {code} as code,
     {job} as job,
     {startTime} as startTime,
-    {endTime}-{startTime} as duration,
     {endTime} as endTime,
+    TIMEDIFF({endTime},{startTime}) as duration,
     {result} as result,
     {nodeId} as nodeId
 from {CronJob}
 where 
     {active} = 1
-    and DATEDIFF(NOW(), {endTime}) < 2
 order by {endTime} desc

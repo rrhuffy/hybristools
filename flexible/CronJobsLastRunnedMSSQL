@@ -1,0 +1,12 @@
+select
+    {code} as code,
+    {job} as job,
+    {startTime} as startTime,
+    {endTime} as endTime,
+    CONCAT(FORMAT(FLOOR(DATEDIFF(SECOND, {startTime}, {endTime}) / 3600.0),'00'), ':', FORMAT(FLOOR(DATEDIFF(SECOND, {startTime}, {endTime}) / 60.0) % 60, '00'), ':', FORMAT(DATEDIFF(SECOND, {startTime}, {endTime}) % 60, '00')) as duration,
+    {result} as result,
+    {nodeId} as nodeId
+from {CronJob}
+where 
+    {active} = 1
+order by {startTime} desc
