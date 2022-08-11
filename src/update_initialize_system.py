@@ -4,6 +4,8 @@ import logging
 import re
 
 import time
+
+from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -15,6 +17,7 @@ from lib import logging_helper
 from lib import selenium_helper
 
 ACTIONS = ['update', 'initialize']
+DEFAULT_SELECTED_CHECKBOXES = ['Update running system', 'Create essential data', 'Localize types']
 
 parser = argparse.ArgumentParser('Script that executes update or initialize hybris server')
 hybris_argparse_helper.add_hybris_hac_arguments(parser)
@@ -60,7 +63,17 @@ if args.extensions:
 
     for extension_name, extension_options in extensions_with_options:
         print(f'Toggling extension "{extension_name}"')
-        driver.find_element_by_xpath(f'//label[text()="{extension_name}"]').click()
+        if extension_name in DEFAULT_SELECTED_CHECKBOXES:
+            # click on text, because we have multiple sibling inputs in div with id "requiredForInit"
+            driver.find_element_by_xpath(f'//label[text()="{extension_name}"]').click()
+        else:
+            # click on sibling input because clicking on text is not selecting them; we have div per each input+label
+            try:
+                element = driver.find_element_by_xpath(f'//label[text()="{extension_name}"]/../input')
+            except ElementClickInterceptedException:  # fallback for 2011
+                element = driver.find_element_by_xpath(f'//label[text()="{extension_name}"]')
+            driver.execute_script("arguments[0].scrollIntoView(true);", element)
+            element.click()
         for key, value in extension_options:
             print(f'Selecting "{key}" to "{value}"')
             driver.find_element_by_xpath(
@@ -80,10 +93,6 @@ if args.sleep:
 
 button_execute = driver.find_element_by_class_name('buttonExecute')
 selenium_helper.wait_until_element_is_displayed(button_execute)
-# TODO: scroll to button to avoid problems when using browser during 10s pause:
-# selenium.common.exceptions.WebDriverException: Message:
-# unknown error: Element <button class="buttonExecute">...</button> is not clickable at point (84, 9).
-# Other element would receive the click: <label for="initMethod">...</label>
 button_execute.click()
 if args.action == 'initialize':
     driver.switch_to.alert.accept()
