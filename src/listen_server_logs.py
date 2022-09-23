@@ -13,6 +13,7 @@ import time
 from collections import Counter
 
 from lib import logging_helper
+from lib import shell_helper
 
 if os.name == 'nt':
     import tailer
@@ -32,9 +33,7 @@ CRITICAL_MESSAGES = ['<-- Wrapper Stopped',
                      'Error creating bean with name']
 
 
-def check_line(line, ignored_messages, context, exit_callback=None):
-    launching_triggered = False
-
+def check_line(line, context, exit_callback=None):
     if context.print_from and not context.print_in_progress:
         match = re.search(context.print_from, line)
         if match:
@@ -51,31 +50,10 @@ def check_line(line, ignored_messages, context, exit_callback=None):
                 exit_callback()
             sys.exit(0)
 
-    if context.check_beans or (context.launching and context.startup):
-        match = re.search(r"Error creating bean with name '([^']+)'.*", line)
-        if match:
-            bean_error_message = match.group(0)
-            if ignored_messages is not None and not any(
-                    (ignored in bean_error_message for ignored in ignored_messages)):
-                context.counter.update([(match.group(1))])
-                if context.counter.get(match.group(1)) == 1:
-                    logging.error(bean_error_message)
-                    subprocess.call(f'notify-send "Error in spring beans:" "{bean_error_message}"', shell=True)
-
-        match = re.search(r"org\.springframework\.beans\.factory\.\w+Exception: (.+)", line)
-        if match:
-            bean_error_message = match.group(0)
-            if ignored_messages is not None and not any(
-                    (ignored in bean_error_message for ignored in ignored_messages)):
-                context.counter.update([(match.group(1))])
-                if context.counter.get(match.group(1)) == 1:
-                    logging.error(bean_error_message)
-                    # subprocess.call(f'notify-send "Error in spring beans:" "{bean_error_message}"', shell=True)
-
     if context.launching:
         match = re.search(r'\d{4}.*Launching a JVM.*', line)
         if match:
-            launching_triggered = True
+            context.launching_triggered = True
             searched_text = match.group(0)
             logging.info(f'Found regex in {searched_text}')
             # if logging_helper.get_logging_level() <= logging_helper.LogLevel.INFO:
@@ -100,17 +78,15 @@ def check_line(line, ignored_messages, context, exit_callback=None):
             sys.exit(0)
 
     # check for critical messages only when server is launching (ignore errors happening during server shutdown)
-    if context.startup and (not context.launching or launching_triggered):
-        any_critical_found = False
+    if context.startup and (not context.launching or context.launching_triggered):
         for critical_message in CRITICAL_MESSAGES:
             match = re.search(critical_message, line)
             if match:
-                logging.critical(f'Found critical regex [{critical_message}] in line [{line.rstrip()}]')
-                any_critical_found = True
-
-        if any_critical_found:
-            logging.critical('Exiting because of error(s) above')
-            sys.exit(1)
+                logging.critical(f'Found [{critical_message}] in line [{line.rstrip()}{shell_helper.reset_color()}]')
+                logging.critical(f'Exiting because of error(s) above')
+                if exit_callback:
+                    exit_callback()
+                sys.exit(1)
 
     if not (context.print_from and context.print_to) and not context.launching and not context.startup:
         match = re.search(context.regex, line)
@@ -119,8 +95,7 @@ def check_line(line, ignored_messages, context, exit_callback=None):
                 searched_text = match.group(0)
                 logging.info(f'Found regex: {searched_text}')
                 # subprocess.call(f'notify-send "Found regex:" "{searched_text}"', shell=True)
-                if context.check_beans:
-                    print_beans_report(context)
+
             if exit_callback:
                 exit_callback()
             sys.exit(0)
@@ -128,7 +103,7 @@ def check_line(line, ignored_messages, context, exit_callback=None):
 
 def print_beans_report(context):
     if len(context.counter.keys()) > 0:
-        logging.info(context.counter)
+        logging.info(f'{context.counter} broken beans')
     else:
         logging.info('Nothing weird found in beans')
 
@@ -153,7 +128,6 @@ class Bunch(dict):
 def main():
     parser = argparse.ArgumentParser(description='Script that listens server logs for given regex')
     parser.add_argument('regex', nargs='?', help='regex to search in logs')
-    parser.add_argument('--beans', action='store_true', help='Check info about bean errors in logs')
     logging_helper.add_logging_arguments_to_parser(parser)
     parser.add_argument('--launching', action='store_true', help='Listen "Launching a JVM"')
     parser.add_argument('--startup', action='store_true', help='Listen "Server startup in X ms"')
@@ -172,19 +146,12 @@ def main():
     else:
         logging.info(f'Listening server logs for "{args.regex}"')
 
-    # try to load ignored messages from csv file
-    ignored_messages = None
-    if os.path.exists(f'{__file__}.dat'):
-        with open(f'{__file__}.dat') as ignored_messages:
-            reader = csv.reader(ignored_messages)
-            ignored_messages = set([row[0] for row in reader])
-
     hybris_dir = os.getenv('HYBRIS_DIR')
     date_yyyymmdd = datetime.datetime.now().strftime("%Y%m%d")
     log_path = f'{hybris_dir}/log/tomcat/console-{date_yyyymmdd}.log'
     context = Bunch(counter=Counter(), print_from=args.print_from, print_to=args.print_to, regex=args.regex,
                     print_in_progress=False, launching=args.launching, startup=args.startup,
-                    check_beans=args.beans)
+                    launching_triggered=False)
 
     if os.name == 'nt':
         # handle situation when log file doesn't exist yet
@@ -198,13 +165,12 @@ def main():
 
         with open(log_path, 'r') as logfile:
             for line in tailer.follow(logfile):
-                check_line(line, ignored_messages, context)
+                check_line(line, context)
     elif os.name == 'posix':
         with subprocess.Popen(['tail', '-F', '-n', '0', log_path], stdout=subprocess.PIPE) as tail:
             try:
                 for line_to_decode in tail.stdout:
-                    check_line(line_to_decode.decode(), ignored_messages,
-                               context, exit_callback=lambda: tail.kill())
+                    check_line(line_to_decode.decode(), context, exit_callback=lambda: tail.kill())
             except KeyboardInterrupt:
                 logging.info('Bye')
                 sys.exit(1)
