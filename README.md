@@ -198,6 +198,8 @@ sq '*:*' | jq '.response.docs[0]'
 sq '*:*' | jq '.response.docs[:2]'
 # show only pk, code and catalogVersion from all results
 sq '*:*' | jq '.response.docs[] | {pk, code_string, catalogVersion}'
+# same as above but with custom key names
+sq '*:*' | jq '.response.docs[] | {pk: .pk, code: .code_text, cv: .catalogVersion}'
 # another way to show only pk, code and catalogVersion is to use "gron":
 sq '*:*' | gron | grep -P 'pk|code_string|catalogVersion'
 # if you want to rerun a real query then enable SOLR logger by command below and reuse query from logs
