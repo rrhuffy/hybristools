@@ -79,7 +79,7 @@ restarthybrisserver() { xg "de.hybris.platform.jmx.JmxClient.restartWrapper(new 
 xgsetonline() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk} and {cv.version}='Online'}\").result)"; }
 xgsetstaged() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk} and {cv.version}='Staged'}\").result)"; }
 xgsetall() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk}}\").result)"; }
-runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),true)"; }
+runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),true)" && echo "CronJob $1 started"; }
 setparametertemporary() { xg "de.hybris.platform.util.Config.setParameter('$1','$2');"; }
 setparametertemporarywithequals() {
     pattern='^(.+)\s*=\s*(.+)$'
@@ -100,6 +100,8 @@ logallcleanlog() { egrep -v 'DefaultQueryPreprocessorRegistry|solr indexer threa
 
 si() { xf $PROJECTS_DIR/hybristools/flexible/ShowItem 99999 "${@:2}" --parameters "$1"; }
 sid() { xf $PROJECTS_DIR/hybristools/flexible/ShowItemDirect 99999 "${@:2}" --parameters "$1"; }
+sidgrep() { sid "$1" | pee "head -n 1" "grep ${@:2}"; }
+sidrg() { sid "$1" | pee "head -n 1" "rg ${@:2}"; }
 
 yf() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | debuginfowarnerrortostderr | multiline_tabulate - -T "${@:2}"; }
 yfa() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | unroll_pk - | debuginfowarnerrortostderr | multiline_tabulate - -T "${@:2}"; }
@@ -183,6 +185,8 @@ sedcleanhybrislog() { sed -E "s/([^|]+\|){3} 20//"; }
 sedcleanhybrislogwithdate() { sed -E "s/([^|]+\|){3} .{11}//"; }
 # for VIM:          :%s/^\([^|]\+|\)\{3\} .\{26\}//
 sedcleanhybrislogwithdateandtime() { sed -E "s/([^|]+\|){3} .{26}//"; }
+
+sedcleanspacecolumns() { sed -E "s/([^ ]+ +){$1}//"; }
 
 # pipe DEBUG|INFO|WARN|ERROR to stderr, so it won't be picked by multiline_tabulate causing errors
 # TODO: maybe just ignore DEBUG|INFO|WARN|ERROR inside multiline_tabulate, because it is used exclusively for that?
