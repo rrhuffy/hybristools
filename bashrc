@@ -39,6 +39,7 @@ iimhmc() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_i
 
 getclipboard() { xclip -selection clipboard -o; }
 xgc() { xg "$(getclipboard)" "$@"; }
+xgrc() { xgr "$(getclipboard)" "$@"; }
 xfc() { xf "$(getclipboard)" "$@"; }
 iic() { getclipboard && echo && ii "$(getclipboard)" "$@"; }
 
