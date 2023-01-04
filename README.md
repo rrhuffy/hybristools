@@ -189,9 +189,15 @@ Execute a query on given index. Checks whether flip or flop is newer (if exists)
 sq '*:*'
 # example query if there are more than one index (excluding backoffice one)
 sq '*:*' --index=powertoolsIndex
+# example query for specific index (regex searched) using two fields and returning 100 rows
+sq --index prod 'description_text_en:Something && catalogVersion:Online' 'rows=100'
 # example queries with data filtering using jq: https://stedolan.github.io/jq/manual/
 # show only documents, without SOLR metadata
 sq '*:*' | jq '.response.docs[]'
+# filter to only responses which has field "fieldName"
+sq '*:*' | jq '.response.docs[] | select(has("fieldName"))'
+# filter to only responses which has field "fieldName" set to "value"
+sq '*:*' | jq '.response.docs[] | select(.fieldName | test("value"))'
 # show only first document
 sq '*:*' | jq '.response.docs[0]'
 # show first two documents
@@ -680,7 +686,7 @@ apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | otherAsi
 apparel-de | premium-gross    | Premium Delivery  | 1-2 business days | otherAsianRegions | 10.99  | 0.0     | [Currency](isocode)GBP
 ...and more
 ```
-Check also other queries in `$PROJECTS_DIR/hybristools/flexible folder`
+Check also other queries in `$PROJECTS_DIR/hybristools/flexible` folder
 
 Import impex with media
 ==
