@@ -54,8 +54,8 @@ def _execute_flexible_search_and_return_json(session, hac_address, query, csrf, 
     except requests.exceptions.ChunkedEncodingError as exc:
         raise ExecuteFlexibleSearchException(f'ChunkedEncodingError: {exc}')
 
-    if post_result.status_code >= 500:
-        raise ExecuteFlexibleSearchException(f'Received HTTP{post_result.status_code} error')
+    if post_result.status_code >= 400:
+        raise ExecuteFlexibleSearchException(f'Received HTTP{post_result.status_code} error: {post_result.text}')
 
     result_json = post_result.json()
 
