@@ -1,0 +1,18 @@
+-- xf $PROJECTS_DIR/hybristools/flexible/CheckItemChanges --parameters 8796387969184
+-- xf $f/CheckItemChanges --parameters 8796387969184
+select
+    {sve.modifiedTime} as modifiedTime,
+    {sv.user} as who,
+    {sv.modificationType} as modificationType,
+    {sve.modifiedAttribute} as attribute,
+    {sve.oldValue} as oldValue,
+    {sve.newValue} as newValue
+from {
+    Item as i
+    join SavedValues as sv on {sv.modifiedItem} = {i.pk}
+    join SavedValueEntry as sve on {sve.parent} = {sv.pk}
+}
+where
+    {i.pk} = $1
+order by
+    {sv.modificationType} desc
