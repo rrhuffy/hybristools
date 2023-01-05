@@ -23,6 +23,7 @@ from lib import shell_helper
 
 # TODO: figure out how to write eg. PaymentInfo but effectively work for subtypes like InvoicePaymentInfo
 # TODO: implement multiple keys, for example CatalogVersion should use catalog.id+version
+# TODO: leave OOTB types here and read additional ones from environment variable
 CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'PaymentInfo': 'code',
                                    'InvoicePaymentInfo': 'code',
@@ -31,7 +32,8 @@ CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'OrderEntry': 'product',
                                    'CartEntry': 'product',
                                    'PatchExecution': 'patchId',
-                                   # 'CatalogVersion': 'catalog',
+                                   'SalesAreaCustomerData': 'salesArea',
+                                   'CatalogVersion': 'catalog',
                                    }
 
 
