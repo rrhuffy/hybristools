@@ -1,12 +1,25 @@
-// xg $PROJECTS_DIR/hybristools/groovy/solrIndexProduct.groovy --parameters ProductIndex 8796290678785
+// xg $PROJECTS_DIR/hybristools/groovy/solrIndexProducts.groovy --parameters ProductIndex 8796290678785
+// xg $PROJECTS_DIR/hybristools/groovy/solrIndexProducts.groovy --parameters ProductIndex 8796290678785,8796093186649
 
-product = flexibleSearchService.search("select {pk} from {Product} where {pk}='$2'").result[0]
+firstArgument = '''$1'''
+secondArgument = '''$2'''
+if (firstArgument.equals('$' + '1') || secondArgument.equals('$' + '2') ) {
+    println "You must provide 2 arguments: index and productCodeInCsv. Examples: '--parameters ProductIndex 8796290678785', '--parameters ProductIndex 8796290678785,8796093186649'"
+    return
+}
 
-solrFacetSearchConfigs = flexibleSearchService.search("select {pk} from {SolrFacetSearchConfig} where {name} like '%$1%'").result
+solrFacetSearchConfigs = flexibleSearchService.search("select {pk} from {SolrFacetSearchConfig} where {name} like '%$firstArgument%'").result
 if (solrFacetSearchConfigs.size() > 1) {
     println "More than one SolrFacetSearchConfig found, exiting. All configs:\n${solrFacetSearchConfigs.name.join('\n')}"
     return
 }
+
+sqlCompatibleProductPKs = secondArgument.split(',').collect{"'$it'"}.join(",")
+println "sqlCompatibleProductPKs: $sqlCompatibleProductPKs"
+
+products = flexibleSearchService.search("select {pk} from {Product} where {pk} in (${sqlCompatibleProductPKs})").result
+println "products: $products"
+
 solrFacetSearchConfig = solrFacetSearchConfigs[0]
 solrIndexerHotUpdateJob = flexibleSearchService.search("select {pk} from {ServicelayerJob} where {code}='solrIndexerHotUpdateJob'").result[0]
 
@@ -14,7 +27,7 @@ updateCronJob = modelService.create(de.hybris.platform.solrfacetsearch.model.ind
 updateCronJob.setFacetSearchConfig(solrFacetSearchConfig)
 updateCronJob.setJob(solrIndexerHotUpdateJob)
 updateCronJob.setIndexTypeName("Product")
-updateCronJob.setItems(java.util.List.of(product))
+updateCronJob.setItems(products)
 updateCronJob.setRemoveOnExit(true)
 
 if (de.hybris.platform.util.Config.getBoolean("task.engine.loadonstartup", false)) {
@@ -28,9 +41,9 @@ if (de.hybris.platform.util.Config.getBoolean("task.engine.loadonstartup", false
     modelService.save(trigger)
     println "CronJob's (${updateCronJob.getPk()}) trigger should activate soon, to check if it is completed:"
     println "xg 'cronJobService.getCronJob(\"${updateCronJob.getCode()}\").getStatus()'"
-    if (de.hybris.platform.util.Config.getInt("task.polling.interval.min", 0) > 1 ||
-        de.hybris.platform.util.Config.getInt("task.polling.interval", 0) > 1 ||
-        de.hybris.platform.util.Config.getInt("task.auxiliaryTables.scheduler.interval.seconds", 0) > 1) {
+    if (Eval.me(de.hybris.platform.util.Config.getString("task.polling.interval.min", "999")) > 1 ||
+        Eval.me(de.hybris.platform.util.Config.getString("task.polling.interval", "999")) > 1 ||
+        Eval.me(de.hybris.platform.util.Config.getString("task.auxiliaryTables.scheduler.interval.seconds", "999")) > 1) {
         println "To speed up trigger activation locally to one second you can set in local.properties:"
         println "task.polling.interval.min=1\ntask.polling.interval=1\ntask.auxiliaryTables.scheduler.interval.seconds=1"
     }
@@ -43,3 +56,5 @@ if (de.hybris.platform.util.Config.getBoolean("task.engine.loadonstartup", false
 }
 
 modelService.save(updateCronJob)
+
+null // avoid printing output and result when using execute_script.py
