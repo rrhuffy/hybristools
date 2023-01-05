@@ -14,7 +14,7 @@ import sys
 from lib import logging_helper
 from lib import requests_helper
 
-logging_helper.run_ipython_on_exception()
+logging_helper.run_ipdb_or_pdb_on_exception()
 
 ignorable_fields = ['autosuggest', 'spellcheck']
 

@@ -51,11 +51,7 @@ def _common_create_webdriver(driver, implicit_wait_time):
             driver.get_screenshot_as_file('selenium_error.png')
         import sys
         sys.stderr.flush()
-        print('Post exception handler running...')
-        print('Running pdb - after debugging just execute "exit" in pdb')
-        import pdb
-        pdb.pm()
-        print('Quitting...')
+        logging_helper.run_ipdb_or_pdb()
         driver.quit()
 
     logging_helper.install_cleanup_exception_hook(cleanup_after_exception_handler)

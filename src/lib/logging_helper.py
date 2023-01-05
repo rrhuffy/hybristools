@@ -34,16 +34,28 @@ def install_cleanup_exception_hook(callback, re_raise_exception=False):
     sys.excepthook = ExcepthookChain(sys.excepthook, cleanup_callback_exception_hook_handler)
 
 
-def run_ipython_on_exception():
+def run_ipdb_or_pdb():
+    # do run ipdb/pdb if output is a pipe
+    if not sys.stdout.isatty():
+        return
+
+    print('Running debugger - after debugging just execute "exit()"')
+    try:
+        import ipdb
+        ipdb.pm()
+    except ImportError:
+        import pdb
+        pdb.pm()
+    print('Quitting debugger')
+
+
+def run_ipdb_or_pdb_on_exception():
     # do not install exception hook if output is a pipe
     if not sys.stdout.isatty():
         return
 
     def cleanup_after_exception_handler():
-        print('Running debugger - after debugging just execute "exit()"')
-        import pdb
-        pdb.pm()
-        print('Quitting debugger')
+        run_ipdb_or_pdb()
 
     install_cleanup_exception_hook(cleanup_after_exception_handler)
 

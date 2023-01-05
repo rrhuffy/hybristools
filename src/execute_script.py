@@ -125,7 +125,7 @@ def _handle_cli_arguments():
 
 
 def main():
-    logging_helper.run_ipython_on_exception()
+    logging_helper.run_ipdb_or_pdb_on_exception()
     args, script = _handle_cli_arguments()
     wrapped_execute_script = logging_helper.decorate_method_with_pysnooper_if_needed(execute_script, args.logging_level)
     response = wrapped_execute_script(script, args.type, args.rollback, args.address, args.user, args.password)

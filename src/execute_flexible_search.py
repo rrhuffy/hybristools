@@ -208,7 +208,7 @@ def _handle_cli_arguments():
 
 
 def main():
-    logging_helper.run_ipython_on_exception()
+    logging_helper.run_ipdb_or_pdb_on_exception()
     args, flexible_query = _handle_cli_arguments()
     wrapped_execute_flexible_search_and_return_header_and_data = logging_helper.decorate_method_with_pysnooper_if_needed(
         _execute_flexible_search_and_return_header_and_data, args.logging_level)
