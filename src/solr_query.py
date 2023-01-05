@@ -20,12 +20,15 @@ ignorable_fields = ['autosuggest', 'spellcheck']
 
 parser = argparse.ArgumentParser('Script for executing query on last indexed (flip|flop) SOLR index')
 parser.add_argument('query', nargs='?', default='*:*', help='Query to execute, by default *:*')
-parser.add_argument('--index', default='.', help='Regex with index to use, case insensitive, default "." == any index')
+parser.add_argument('parameters', nargs='?', default='', help='Additional parameters, for example "rows=100"'
+                                                              ' or "start=100&rows=100"'
+                                                              ' or even "facet=true&json.facet.fieldName_string_mv={}"')
+parser.add_argument('--index', '-i', default='.', help='Regex with index to use, case insensitive, default "." == any index')
 # TODO: maybe find solr address by using HAC (from ENV)? solrserver.instances.standalone.* and *.endpoint properties
 parser.add_argument('--address',
                     default=os.environ.get('HYBRIS_SOLR_URL') if os.environ.get('HYBRIS_SOLR_URL') else
                     os.environ.get('HYBRIS_HAC_URL').replace('/hac', '').replace(':9002', ':8983'),
-                    help='SOLR address, by default: HYBRIS_HAC_URL with removed /hac suffix and changed 9002 into 8983')
+                    help='SOLR address, by default: HYBRIS_SOLR_URL if exists or HYBRIS_HAC_URL with removed /hac suffix and changed 9002 into 8983')
 parser.add_argument('--user', default='solrserver', help='User to log into SOLR, by default solrserver')
 parser.add_argument('--password', default='server123', help='Password to use to log into SOLR, by default server123')
 logging_helper.add_logging_arguments_to_parser(parser)
@@ -58,12 +61,13 @@ for metric in get.json()['metrics'].values():
 
 index_names = "\n".join(name_to_index_with_timestamp.keys())
 index_to_use = None
-if len(name_to_index_with_timestamp) > 0:
-    # exit if regex for searching index is not provided and we have more than 1 result
-    if args.index == '.' and len(name_to_index_with_timestamp) > 1:
-        logging.error(f'More than one index found, use --index to provide regex, available ones:\n{index_names}')
-        sys.exit(1)
 
+# exit if regex for searching is not provided, and we have more than one index to choose
+if args.index == '.' and len(name_to_index_with_timestamp) > 1:
+    logging.error(f'More than one index found, use --index to provide regex, available ones:\n{index_names}')
+    sys.exit(1)
+
+if len(name_to_index_with_timestamp) > 0:
     for index_name, flip_and_flop in name_to_index_with_timestamp.items():
         if re.search(args.index, index_name, re.IGNORECASE):
             # we found requested index name, now check whether flip or flow is fresher
@@ -78,9 +82,9 @@ if index_to_use is None:
     logging.error(f'Could not find index using regex "{args.index}", available ones:\n{index_names}')
     sys.exit(1)
 
-logging.debug(f'Index: "{index_to_use}", query: "{args.query}", results:')
+logging.debug(f'Index: "{index_to_use}", query: "{args.query}", parameters: "{args.parameters}", results:')
 safe_query = quote_plus(args.query, safe=':')
-address = f'{args.address}/solr/{index_to_use}/select?q={safe_query}'
+address = f'{args.address}/solr/{index_to_use}/select?q={safe_query}' + ('&' + args.parameters if args.parameters else '')
 requests_get = session.get(address, auth=(args.user, args.password), verify=False)
 result_json = requests_get.json()
 
