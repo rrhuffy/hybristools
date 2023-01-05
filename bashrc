@@ -186,6 +186,9 @@ sedcleanhybrislog() { sed -E "s/([^|]+\|){3} 20//"; }
 sedcleanhybrislogwithdate() { sed -E "s/([^|]+\|){3} .{11}//"; }
 # for VIM:          :%s/^\([^|]\+|\)\{3\} .\{26\}//
 sedcleanhybrislogwithdateandtime() { sed -E "s/([^|]+\|){3} .{26}//"; }
+# https://superuser.com/questions/380772/removing-ansi-color-codes-from-text-stream/380778#380778
+# \x1b\[[0-9;]*m
+sedcleanhybrislogwithdateandtimeandlevelandthread() { sed -E "s/([^|]+\|){3} .{26}\x1b\[[0-9;]*m[A-Z]+\s+\[[^]]+\]\s*//"; }
 
 sedcleanspacecolumns() { sed -E "s/([^ ]+ +){$1}//"; }
 
