@@ -15,7 +15,7 @@ def log_into(driver, address, login, password):
     username_field.clear()
     username_field.send_keys(login)
     xpath_for_password_field = '//input[@type="password" and contains(@name, "password")]'
-    password_field = driver.find_element_by_xpath(xpath_for_password_field)
+    password_field = driver.find_element(By.XPATH, xpath_for_password_field)
     password_field.clear()
     password_field.send_keys(password)
 
@@ -24,13 +24,13 @@ def log_into(driver, address, login, password):
         language_select = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.TAG_NAME, 'select')))
         if language_select:
             print('changing language to English')
-            language_select.find_element_by_xpath('option[text()="English"]').click()
+            language_select.find_element(By.XPATH, 'option[text()="English"]').click()
 
     print('clicking login button...', end='', flush=True)
     xpath_for_login_button = '//button|//a|//span[@title="Login"]'
 
     if address.endswith(('backoffice', 'backoffice/')):
         WebDriverWait(driver, 5).until(EC.text_to_be_present_in_element((By.XPATH, xpath_for_login_button), 'Login'))
-    driver.find_element_by_xpath(xpath_for_login_button).click()
+    driver.find_element(By.XPATH, xpath_for_login_button).click()
 
     print('logged in')

@@ -42,36 +42,36 @@ time.sleep(0.5)
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//tr[@title="Import"]'))).click()
 
 xpath_for_impex_input = '//button[text()="upload"]/following-sibling::span//input'
-driver.find_element_by_xpath(xpath_for_impex_input).send_keys(args.impex)
+driver.find_element(By.XPATH, xpath_for_impex_input).send_keys(args.impex)
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//button[text()="create"]'))).click()
 
 WebDriverWait(driver, 5).until(
-    lambda x: driver.find_element_by_xpath('//span[text()="Choose media:"]/following-sibling::div').text)
+    lambda x: driver.find_element(By.XPATH, '//span[text()="Choose media:"]/following-sibling::div').text)
 
 xpath_for_next_button = '//button[text()="Next"]'
 next_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath_for_next_button)))
 next_button.click()
 
 WebDriverWait(driver, 5).until(
-    lambda x: not driver.find_element_by_xpath('//span[text()="Media-Zip:"]/following-sibling::div').text)
+    lambda x: not driver.find_element(By.XPATH, '//span[text()="Media-Zip:"]/following-sibling::div').text)
 
 xpath_for_media_button = '//button[text()="upload"]'
 media_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath_for_media_button)))
 xpath_for_media_input = 'following-sibling::span//input'
-media_input = media_button.find_element_by_xpath(xpath_for_media_input)
+media_input = media_button.find_element(By.XPATH, xpath_for_media_input)
 media_input.send_keys(args.media)
 
 # when using remote backoffice uploading can take some time
 WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//button[text()="create"]'))).click()
 
 WebDriverWait(driver, 5).until(
-    lambda x: driver.find_element_by_xpath('//span[text()="Media-Zip:"]/following-sibling::div').text)
+    lambda x: driver.find_element(By.XPATH, '//span[text()="Media-Zip:"]/following-sibling::div').text)
 
 xpath_for_start_button = '//button[text()="Start"]'
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath_for_start_button))).click()
 
 cron_job_text = WebDriverWait(driver, 5).until(
-    lambda x: driver.find_element_by_xpath('//span[text()="Cron Job:"]/following-sibling::div').text)
+    lambda x: driver.find_element(By.XPATH, '//span[text()="Cron Job:"]/following-sibling::div').text)
 cron_job_code = re.search(r'(ImpEx-Import : )([^ ]+)', cron_job_text).group(2)
 
 print(f'Started ImpEx import cron job with code: {cron_job_code}')

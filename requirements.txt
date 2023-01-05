@@ -1,7 +1,7 @@
 beautifulsoup4~=4.9.3
 common~=0.1.2
 PySnooper~=0.4.2
-selenium~=3.141.0
+selenium~=4.7.2
 soupsieve~=2.2
 urllib3~=1.26.3
 requests~=2.25.1

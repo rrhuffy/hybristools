@@ -65,21 +65,21 @@ if args.extensions:
         print(f'Toggling extension "{extension_name}"')
         if extension_name in DEFAULT_SELECTED_CHECKBOXES:
             # click on text, because we have multiple sibling inputs in div with id "requiredForInit"
-            driver.find_element_by_xpath(f'//label[text()="{extension_name}"]').click()
+            driver.find_element(By.XPATH, f'//label[text()="{extension_name}"]').click()
         else:
             # click on sibling input because clicking on text is not selecting them; we have div per each input+label
             try:
-                element = driver.find_element_by_xpath(f'//label[text()="{extension_name}"]/../input')
+                element = driver.find_element(By.XPATH, f'//label[text()="{extension_name}"]/../input')
             except ElementClickInterceptedException:  # fallback for 2011
-                element = driver.find_element_by_xpath(f'//label[text()="{extension_name}"]')
+                element = driver.find_element(By.XPATH, f'//label[text()="{extension_name}"]')
             driver.execute_script("arguments[0].scrollIntoView(true);", element)
             element.click()
         for key, value in extension_options:
             print(f'Selecting "{key}" to "{value}"')
-            driver.find_element_by_xpath(
-                f'//label[text()="{extension_name}"]' +
-                f'/..//dt[text()="{key}"]' +
-                f'/following-sibling::*[1]//option[@value="{value}"]').click()
+            driver.find_element(By.XPATH,
+                                f'//label[text()="{extension_name}"]' +
+                                f'/..//dt[text()="{key}"]' +
+                                f'/following-sibling::*[1]//option[@value="{value}"]').click()
 
 if args.pause:
     helpers.pause_with_enter_or_exit(f'After selecting extensions, before clicking {args.action} button',
@@ -91,12 +91,12 @@ if args.sleep:
     time.sleep(10)
     print('done')
 
-button_execute = driver.find_element_by_class_name('buttonExecute')
+button_execute = driver.find_element(By.CLASS_NAME, 'buttonExecute')
 selenium_helper.wait_until_element_is_displayed(button_execute)
 button_execute.click()
 if args.action == 'initialize':
     driver.switch_to.alert.accept()
-status_element = driver.find_element_by_id('inner')
+status_element = driver.find_element(By.ID, 'inner')
 last_text = ''
 
 while True:
