@@ -188,7 +188,12 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
                 # xf "SELECT * FROM ({{SELECT {PK}, {code} FROM {Media} WHERE {PK} = '8796101738526'}} UNION ALL {{SELECT {PK}, {catalogVersion} FROM {ProductBrandSpecificContent} WHERE {PK} = '8796094147325'}}) uniontable"
                 # This is not working on HANA (b2bpprodweb01)
                 # xf "SELECT * FROM ({{SELECT {PK}, {code} FROM {Media} WHERE {PK} = '8802523611166'}} UNION ALL {{SELECT {PK}, {catalogVersion} FROM {ProductBrandSpecificContent} WHERE {PK} = '8796096277245'}}) uniontable"
-                subquery_template = "{{{{SELECT {{PK}}, {{{qualifier}}} FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
+
+                # TODO: check env var with dict [url,sql], if no entry try mssql for external, mysql for localhost; if error try second one and save in dict/env
+                subquery_template_mysql = "{{{{SELECT {{PK}}, {{{qualifier}}} FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
+                subquery_template_mssql = "{{{{SELECT CONVERT(nvarchar(50),{{PK}}) as PK, CONVERT(nvarchar(50),{{{qualifier}}}) as QUALIFIER FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
+                subquery_template = subquery_template_mysql if 'localhost' in address else subquery_template_mssql
+
                 # example for MSSQL (but then it won't work in MySQL...)
                 # subquery_template = "{{{{SELECT {{PK}}, CONVERT(CHAR, {{{qualifier}}}) as v FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
                 subquery_template_list = list()
