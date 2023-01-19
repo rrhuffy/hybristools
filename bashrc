@@ -245,4 +245,4 @@ hsiwithcustomscript() {
 }
 hsipk() { hsi Item PK "$@"; }
 hsipkwithcustomscript() { hsiwithcustomscript "$1" Item PK "${@:2}"; }
-clearcache() { xg 'cacheRegionProvider.getRegions().each{it.clearCache()};net.sf.ehcache.CacheManager.ALL_CACHE_MANAGERS.each{it.clearAll()};de.hybris.platform.core.Registry.getCurrentTenant().getCache().clear();null'; }
+clearcache() { xg 'cacheRegionProvider.getRegions().each{it.clearCache()};net.sf.ehcache.CacheManager.ALL_CACHE_MANAGERS.each{it.clearAll()};de.hybris.platform.core.Registry.getCurrentTenant().getCache().clear();org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info("Cleared caches");null'; }
