@@ -27,10 +27,10 @@ Otherwise, all dependencies will be installed globally.
 python3 -m venv venv
 source venv/bin/activate
 ```
-Install dependencies:
+Install dependencies for Ubuntu:
 ```shell
+sudo apt install python3-wheel python3-venv
 python3 -m pip install --upgrade pip
-python3 -m pip install wheel
 python3 -m pip install -r requirements.txt
 ```
 
