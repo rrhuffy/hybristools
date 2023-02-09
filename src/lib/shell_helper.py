@@ -32,7 +32,7 @@ def get_terminal_height():
 
 def fit_text(text, width=None, already_used_characters=0, postfix='...'):
     width = width or get_terminal_width()
-    if already_used_characters + len(text) > width - len(postfix):
+    if already_used_characters + len(text) > width:
         return text[:width - already_used_characters - len(postfix)] + postfix
     else:
         return text
@@ -147,6 +147,14 @@ def colorize_text(text, color):
 
 def reset_color():
     return '\x1b[39m'
+
+
+def clear_current_line():
+    return '\x1b[2K'
+
+
+def clear_current_line_with_carriage_return():
+    return '\x1b[2K\r'
 
 
 def clear_to_end_of_line():
