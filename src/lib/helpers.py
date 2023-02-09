@@ -14,7 +14,7 @@ def get_cache_filename_for_caller(postfix='cache', caller_depth=1):
     return f'{caller_file_path}.{postfix}'
 
 
-def load_object_from_file(file_path=None, default=None):
+def load_object_from_file(file_path=None, default=None, compress=True):
     if file_path is None:
         file_path = get_cache_filename_for_caller(caller_depth=2)
 
@@ -22,17 +22,23 @@ def load_object_from_file(file_path=None, default=None):
         return default
 
     with open(file_path, 'rb') as input_file:
-        return pickle.loads(zlib.decompress(input_file.read()))
+        if compress:
+            return pickle.loads(zlib.decompress(input_file.read()))
+        else:
+            return pickle.loads(input_file.read())
 
 
-def save_object_to_file(object_to_put, file_path=None):
+def save_object_to_file(object_to_put, file_path=None, compress=True):
     # use urllib.request.pathname2url when using user-provided part of filepath
     # for example regexes can't be saved as file
     if file_path is None:
         file_path = get_cache_filename_for_caller(caller_depth=2)
 
     with open(file_path, 'wb') as output_file:
-        output_file.write(zlib.compress(pickle.dumps(object_to_put)))
+        if compress:
+            output_file.write(zlib.compress(pickle.dumps(object_to_put)))
+        else:
+            output_file.write(pickle.dumps(object_to_put))
 
 
 def double_wrap(func):
