@@ -8,9 +8,12 @@ import sys
 
 
 class LogLevel(IntEnum):
+    TRACE = 0
     DEBUG = 10
     INFO = 20
     WARN = 30
+    ERROR = 40
+    CRITICAL = 50
 
 
 class ExcepthookChain:
@@ -79,8 +82,8 @@ class LoggingAction(argparse.Action):
                  change,
                  logging_format,
                  default=0,
-                 value_min=0,
-                 value_max=60,
+                 value_min=LogLevel.TRACE,
+                 value_max=LogLevel.CRITICAL,
                  required=False,
                  help=None):
         argparse.Action.__init__(
@@ -102,6 +105,9 @@ class LoggingAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         current_value = getattr(namespace, self.dest, self.default)
         new_level = current_value + self.change
+        if new_level == LogLevel.TRACE:
+            import http.client as http_client
+            http_client.HTTPConnection.debuglevel = 1
         setattr(namespace, self.dest, new_level)
         new_level_clamped = _clamp(new_level, self.value_min, self.value_max)
         logging.root.setLevel(new_level_clamped)
@@ -138,7 +144,7 @@ def get_logging_level():
 
 
 def decorate_method_with_pysnooper_if_needed(method, logging_level, *args, **kwargs):
-    if logging_level > 0:
+    if logging_level > LogLevel.TRACE:
         return method
 
     depth = 1 - int(logging_level / 10)
