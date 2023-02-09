@@ -1,5 +1,39 @@
 #!/usr/bin/env python3
 
+# TODO: minimize characters used if output length < terminal width
+# 'Common'.center(terminal_width, '-')
+# 'Unique'.center(terminal_width, '-')
+# so for short answers we can get that:
+# ----Common----
+# a | 1
+# b | 2
+# ----Unique----
+# id | c | d | e
+# 1  | 3 | 4 | 5
+# 2  | 4 | 5 | 6
+# instead of
+# ------------------------------------------Common------------------------------------------
+# a | 1
+# b | 2
+# ------------------------------------------Unique------------------------------------------
+# id | c
+# 1  | 3
+# 2  | 4
+
+# TODO: allow inconsistent amount of delimiters
+# so this
+# a@b@c@d
+# b@b
+# z
+# c@@c
+# d@e@f@g@h
+# can turn into this
+# a | b | c | d
+# b | b |   |
+# z |   |   |
+# c |   | c |
+# d | e | f | g
+
 # TODO performance: printf 'h1\th2\nd1\td2' | python3 -m pyinstrument multiline_tabulate.py -
 
 # TODO --markdown argument to print tables for .md files
@@ -210,14 +244,10 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
             if use_colors:
                 color_dark = 245
                 color_grey = 251
-                if number_of_lines_per_entry == 1 and data_index % 2 == 1:
-                    color = color_grey
-                elif number_of_lines_per_entry == 1 and data_index % 2 != 1:
-                    color = color_dark
-                elif number_of_lines_per_entry != 1 and line_number % 2 == 1:
-                    color = color_grey
-                elif number_of_lines_per_entry != 1 and line_number % 2 != 1:
-                    color = color_dark
+                if number_of_lines_per_entry == 1:
+                    color = color_grey if data_index % 2 == 1 else color_dark
+                else:
+                    color = color_grey if line_number % 2 == 1 else color_dark
                 output_buffer += shell_helper.colorize_text('', color)
 
             # return current buffer if next line will fill whole screen
@@ -344,7 +374,7 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
 
     # replace every line with proper string representation, so for example '\n\t' etc. won't mess the screen
     header_and_data_as_strings = list()
-    for original_entry_line in header_and_data:
+    for original_entry_line in header_and_data[:limit_entries + 1] if limit_entries else header_and_data:
         temporary_line = list()
         for original_entry_line_value in original_entry_line:
             if original_entry_line_value is not None:
