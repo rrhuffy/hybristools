@@ -1,10 +1,12 @@
 import argparse
 import logging
-import os
+from datetime import datetime
 from enum import IntEnum
 
 import pysnooper
 import sys
+
+from lib import shell_helper
 
 
 class LogLevel(IntEnum):
@@ -153,3 +155,52 @@ def decorate_method_with_pysnooper_if_needed(method, logging_level, *args, **kwa
 
 def decorate_method_with_pysnooper(method, depth=1, *args, **kwargs):
     return pysnooper.snoop(depth=depth, *args, **kwargs)(method)
+
+
+def configure_logging_level_with_timestamp(level='INFO', logger=None):
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(name)s;%(levelname)s;%(message)s', '%H:%M:%S')
+    logger = logger or logging.getLogger()  # either the given logger or the root logger
+    logger.setLevel(level)
+    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+    if logger.handlers:
+        console = logger.handlers[0]  # we assume the first handler is the one we want to configure
+    else:
+        console = logging.StreamHandler()
+        logger.addHandler(console)
+    console.setFormatter(formatter)
+    console.setLevel(level)
+
+
+def configure_root_logger_format_with_timestamp():
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(name)s;%(levelname)s;%(message)s', '%H:%M:%S')
+    logger = logging.getLogger()
+    if logger.handlers:
+        console = logger.handlers[0]  # we assume the first handler is the one we want to configure
+    else:
+        console = logging.StreamHandler()
+        logger.addHandler(console)
+    console.setFormatter(formatter)
+
+
+def print_stderr(message):
+    # TODO: when someone uses normal print, clear debug line before printing (is there any option to set line as dirty?)
+    #  or just use debug line on the bottom (like in vim)?
+    # https://en.wikipedia.org/wiki/ANSI_escape_code
+    # CSI s 	SCP, SCOSC 	Save Current Cursor Position
+    # CSI u 	RCP, SCORC 	Restore Saved Cursor Position
+
+    now = datetime.now()
+    prefix = f'{now:%H:%M:%S}.{now.microsecond // 1000:03d} '
+    message = shell_helper.fit_text_printable_part_only(message, already_used_characters=len(prefix))
+    print(f'{shell_helper.clear_current_line_with_carriage_return()}{prefix}{message}',
+          end='' if logging.root.getEffectiveLevel() >= LogLevel.INFO else '\n',
+          file=sys.stderr,
+          flush=True)
+
+
+def clear_stderr():
+    prefix = '' if logging.root.getEffectiveLevel() >= LogLevel.INFO else '\n'
+    print(f'{prefix}{shell_helper.clear_current_line_with_carriage_return()}',
+          end='',
+          file=sys.stderr,
+          flush=True)
