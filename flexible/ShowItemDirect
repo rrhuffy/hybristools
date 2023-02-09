@@ -22,7 +22,7 @@ select distinct * from
             when 'CollectionType' then '*'
             else '1'
         end as C,
-        {ad.attributeHandler} as AH,
+        --{ad.attributeHandler} as AH,
         {ad.modifiers}&32=32 as PO
     from
     {
