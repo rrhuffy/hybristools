@@ -77,7 +77,7 @@ def printSingleFieldValueIfNeeded(fieldName, fieldValue, locale = null, separato
 
     fieldValue = unrollField(fieldName, fieldValue)
     safeTextValue = cleanTextForPrint(fieldValue.toString())
-    if (fieldValue instanceof java.util.Collection) {
+    if (fieldValue instanceof java.util.Collection || fieldValue instanceof java.util.Map) {
         fieldName = fieldName + "(${fieldValue.size()})"
     }
 
