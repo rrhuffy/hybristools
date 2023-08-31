@@ -2,7 +2,7 @@
 -- xf $f/CheckItemChanges --parameters 8796387969184
 select
     {sve.modifiedTime} as modifiedTime,
-    {sv.user} as who,
+    {sv.user} as userPk,
     {sv.modificationType} as modificationType,
     {sve.modifiedAttribute} as attribute,
     {sve.oldValue} as oldValue,
