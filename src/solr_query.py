@@ -64,7 +64,7 @@ index_to_use = None
 
 # exit if regex for searching is not provided, and we have more than one index to choose
 if args.index == '.' and len(name_to_index_with_timestamp) > 1:
-    logging.error(f'More than one index found, use --index to provide regex, available ones:\n{index_names}')
+    logging.critical(f'More than one index found, use --index to provide regex, available ones:\n{index_names}')
     sys.exit(1)
 
 if len(name_to_index_with_timestamp) > 0:
@@ -79,7 +79,7 @@ if len(name_to_index_with_timestamp) > 0:
             break
 
 if index_to_use is None:
-    logging.error(f'Could not find index using regex "{args.index}", available ones:\n{index_names}')
+    logging.critical(f'Could not find index using regex "{args.index}", available ones:\n{index_names}')
     sys.exit(1)
 
 logging.debug(f'Index: "{index_to_use}", query: "{args.query}", parameters: "{args.parameters}", results:')
@@ -91,7 +91,7 @@ result_json = requests_get.json()
 if result_json['responseHeader']['status'] == 400:
     error_msg = result_json['error']['msg']
     error_class = result_json['error']['metadata'][1]
-    logging.error(f'Error during execution: {error_class}: {error_msg}')
+    logging.critical(f'Error during execution: {error_class}: {error_msg}')
     sys.exit(1)
 
 # filtering out unwanted fields

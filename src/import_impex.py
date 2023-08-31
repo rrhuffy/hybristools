@@ -110,7 +110,7 @@ if 'Import has encountered problems' in result_string:
         result_string += f'\nFirst {number_of_lines_to_show} lines of result:\n{first_n_lines}'
     else:
         result_string += f'\nResult:\n{error_message}'
-    logging.debug(f'Result for {args.impex[:100]}: {result_string}')
+    logging.critical(f'Result for {args.impex[:100]}: {result_string}')
     sys.exit(1)
 
 logging.debug(f'Result for {args.impex[:100]}: {result_string}')
