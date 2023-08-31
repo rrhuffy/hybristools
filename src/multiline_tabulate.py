@@ -187,7 +187,7 @@ def _get_tabulated_lines(header_and_data, separator, inner_width, line_numbers_s
         iterator = enumerate(header_and_data)
     else:
         print(f'Found {header_and_data_len} > {SHOW_PROGRESS_THRESHOLD}) '
-              'elements to show (header and data), showing progress bar:')
+              'elements to show (header and data), showing progress bar:', file=sys.stderr)
         # this is not executed often, so import it on demand
         from tqdm import tqdm
         iterator = tqdm(enumerate(header_and_data), total=header_and_data_len)
@@ -547,7 +547,7 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
         sort_effective_index = sort_descending - 1 if sort_descending > 0 else sort_descending
         sort_ascending = False
 
-    if sort_effective_index is not None and sort_ascending is not None:
+    if sort_effective_index is not None and sort_ascending is not None and len(new_header_and_data) > 1:
         logging.debug(f'Sorting {"ascending" if sort_ascending else "descending"} by column nr {sort_effective_index}')
 
         # https://stackoverflow.com/questions/5967500/how-to-correctly-sort-a-string-with-a-number-inside
@@ -611,6 +611,12 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
         #        | cannot be displayed $
         #        | in one line per row $
         # field3 | short value         $
+        # TODO: why only for 2 columns? 3 columns may also want this
+        # 12:34:56|INFO|short log      $
+        # 12:34:57|INFO|very long log l$
+        #              |ine with extra $
+        #              |stuff          $
+        # 12:34:58|INFO|short log      $
         separator_broader = f' {separator} '
         cut = True
         cut = False
@@ -771,31 +777,29 @@ def get_header_and_data_from_string(str, delimiter, quotechar="'"):
 def main():
     parser = argparse.ArgumentParser(description='Script for printing tabular data (single or multi line per row)')
     parser.add_argument('data',
+                        default='-',  # TODO:maybe get rid of it, because it is used for reading from stdin 99.99% time?
+                        nargs='?',
                         help='String with data to put into table and print on console '
                              'OR "-" if piping anything here '
                              'CSV must be RFC-4180 compliant and separated by TAB (excel-tab) '
                              'OR if using other separator then provide it with --csv-delimiter switch')
     add_common_parser_arguments(parser)
     logging_helper.add_logging_arguments_to_parser(parser)
-    is_piping_text = shell_helper.is_piping_text()
-    # no parameters given but piping
-    if len(sys.argv) == 1 and is_piping_text:
-        print('Seems like you are piping a text into this script, but you didn\'t provide "-" as argument, exiting...')
-        parser.print_help()
-        sys.exit(1)
     args = parser.parse_args()
     multiline_tabulate_wrapped = logging_helper.decorate_method_with_pysnooper_if_needed(multiline_tabulate,
                                                                                          args.logging_level)
-    if is_piping_text and args.data == '-':  # piping
-        data = shell_helper.read_text_from_pipe().rstrip('\n').replace('\r', '')
-
-        # remove leading whitespaces
-        data = data.lstrip()
+    if shell_helper.is_piping_text() and args.data == '-':  # piping
+        data = shell_helper.read_text_from_pipe().rstrip('\n').replace('\r', '').lstrip()
     else:  # not piping
         data = args.data.replace('\\t', '\t').replace('\\n', '\n')
 
+    delimiter = args.csv_delimiter
+    if delimiter == '\t' and '\t' not in data:
+        logging.debug(f'TAB is used as delimiter, but there is no TAB character in input, changing delimiter to ","')
+        delimiter = ','
+
     data_split_by_lines = get_header_and_data_from_string(data,
-                                                          delimiter=args.csv_delimiter,
+                                                          delimiter=delimiter,
                                                           quotechar=args.csv_quotechar)
     try:
         print(multiline_tabulate_wrapped(data_split_by_lines, **extract_arguments_as_kwargs(args)))
