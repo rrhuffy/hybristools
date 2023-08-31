@@ -206,6 +206,11 @@ sq '*:*' | jq '.response.docs[:2]'
 sq '*:*' | jq '.response.docs[] | {pk, code_string, catalogVersion}'
 # same as above but with custom key names
 sq '*:*' | jq '.response.docs[] | {pk: .pk, code: .code_text, cv: .catalogVersion}'
+# https://unix.stackexchange.com/questions/600866/limit-output-depth-of-jq
+# decrease output depth (add another []? to have output deeper by one level)
+sq '*:*' | jq '.response.docs[] | del(.[]?[]?)'
+# alternative
+sq '*:*' | jq '.response.docs[] | delpaths([path(..) | select(length > 1)])'
 # another way to show only pk, code and catalogVersion is to use "gron":
 sq '*:*' | gron | grep -P 'pk|code_string|catalogVersion'
 # if you want to rerun a real query then enable SOLR logger by command below and reuse query from logs
