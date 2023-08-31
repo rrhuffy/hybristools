@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# TODO: UX improvement: save cursor position, write original data into stderr, restore cursor position,
+#  then write result in stdout overwriting previous stderr (may need to clear whole screen to avoid characters left from previous stderr stream)
+
 # TODO: HANA and Azure SQL crashes when doing UNION ALL on different columns, fix that so unroll_pk can be used in cloud
 
 # TODO: separate PK -> [Type](field)value and provide extractPk command
@@ -22,7 +25,7 @@ from lib import requests_helper
 from lib import shell_helper
 
 # TODO: figure out how to write eg. PaymentInfo but effectively work for subtypes like InvoicePaymentInfo
-# TODO: implement multiple keys, for example CatalogVersion should use catalog.id+version
+# TODO: implement multiple keys, for example CatalogVersion should use catalog.id+version, or CartEntry: pk+product
 # TODO: leave OOTB types here and read additional ones from environment variable
 CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'PaymentInfo': 'code',
@@ -33,11 +36,15 @@ CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'CartEntry': 'product',
                                    'PatchExecution': 'patchId',
                                    'SalesAreaCustomerData': 'salesArea',
-                                   'CatalogVersion': 'catalog',
+                                   # 'CatalogVersion': 'catalog',
+                                   'CatalogVersion': 'version',
+                                   'CatalogVersionSyncCronJobHistory': 'statusLine',
+                                   'ClassAttributeAssignment': 'classificationAttribute'
                                    }
 
 
 def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_long, user='admin'):
+    user = user or 'admin'
     sql_correct_item_pk_list = ','.join(item_pk_set)
     if sql_correct_item_pk_list:
         # original query to get item pk, Type code and unique qualifiers:
@@ -81,7 +88,7 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
             logging.error(f"ChunkedEncodingError while sending POST to {address + '/console/flexsearch/execute'}")
             return []
 
-        if 500 <= flex_post_result.status_code <= 599:
+        if 500 <= flex_post_result.status_code:
             logging.error(f'Could not get pk to item type mapping, received status {flex_post_result.status_code} '
                           f'when executed {item_pk_to_type_query}')
             return []
@@ -163,7 +170,7 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
             result_list_type_pk_to_qualifier = result_json['resultList']
             logging.debug(f'result_json[result_list_type_pk_to_qualifier] = {result_list_type_pk_to_qualifier}')
             if result_list_type_pk_to_qualifier or type_pk_to_qualifier_dict:
-                preferred_field_names = ['id', 'uid', 'code']
+                preferred_field_names = ['id', 'uid', 'code', 'qualifier']
                 not_preferred_field_names = ['catalogVersion']
 
                 if result_list_type_pk_to_qualifier:
@@ -191,7 +198,7 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
 
                 # TODO: check env var with dict [url,sql], if no entry try mssql for external, mysql for localhost; if error try second one and save in dict/env
                 subquery_template_mysql = "{{{{SELECT {{PK}}, {{{qualifier}}} FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
-                subquery_template_mssql = "{{{{SELECT CONVERT(nvarchar(50),{{PK}}) as PK, CONVERT(nvarchar(50),{{{qualifier}}}) as QUALIFIER FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
+                subquery_template_mssql = "{{{{SELECT CONVERT(nvarchar(100),{{PK}}) as PK, CONVERT(nvarchar(100),{{{qualifier}}}) as QUALIFIER FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
                 subquery_template = subquery_template_mysql if 'localhost' in address else subquery_template_mssql
 
                 # example for MSSQL (but then it won't work in MySQL...)
@@ -275,7 +282,10 @@ if __name__ == '__main__':
     logging.debug(f'text: {text}')
 
     if args.no_analyse:
-        print(text.rstrip())
+        try:
+            print(text.rstrip())
+        except BrokenPipeError:
+            sys.exit(0)
         sys.exit(0)
 
     # clean_or_dummy="sed -E s/\w+Model\s\(([0-9]{13})@[0-9]+\)/\1/g"
@@ -307,5 +317,8 @@ if __name__ == '__main__':
                     logging.debug(f'replacing {key} -> {replace_string} (repr: {replace_string!r})')
                     text = text.replace(key, replace_string)
 
-    for line in text.split('\n'):
-        print(line.rstrip())
+    try:
+        for line in text.split('\n'):
+            print(line.rstrip())
+    except BrokenPipeError:
+        sys.exit(0)
