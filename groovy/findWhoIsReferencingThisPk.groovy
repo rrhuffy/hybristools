@@ -195,12 +195,13 @@ allTypesToSearch.each { currentlySearchedType ->
             debug "        Checking jalo/dynamic field in: ${code}.$qualifier (iterating through ${jaloOrDynamicQueryResult.size()} items)"
             timeStart = new java.util.Date().getTime();
             for (int i=0; i<jaloOrDynamicQueryResult.size(); i++) {
-                itemToCheckInGroovy = jaloOrDynamicQueryResult.get(i)
                 if (new java.util.Date().getTime() - timeStart > MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS) {
                     debug "            ${MAX_TIME_SPENT_IN_JALO_AND_DYNAMIC_HANDLER_IN_MS}ms passed, aborting dynamic/jalo checks"
                     abortedJaloOrDynamicHandlerChecksDueToTimeSpentRestrictions.add("${code}.$qualifier(checked ${i}/${jaloOrDynamicQueryResult.size()})")
                     break
                 }
+
+                itemToCheckInGroovy = jaloOrDynamicQueryResult.get(i)
                 propertyValue = itemToCheckInGroovy.getProperty(qualifier)
                 if (propertyValue == null) {
                     continue

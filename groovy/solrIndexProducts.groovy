@@ -53,6 +53,7 @@ if (de.hybris.platform.util.Config.getBoolean("task.engine.loadonstartup", false
     println "xg 'cronJobService.performCronJob(cronJobService.getCronJob(\"${updateCronJob.getCode()}\"))'"
     println "To check if it is completed:"
     println "xg 'cronJobService.getCronJob(\"${updateCronJob.getCode()}\").getStatus()'"
+    println "'CronJob with code ${updateCronJob.getCode()} not found' means execution is done and cronjob is removed due to setRemoveOnExit(true)"
 }
 
 modelService.save(updateCronJob)

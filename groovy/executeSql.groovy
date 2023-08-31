@@ -1,5 +1,4 @@
 // xg $PROJECTS_DIR/hybristools/groovy/executeSql.groovy --parameters "update cmssite set p_active = true where p_uid ='poland'"
-// xg $g/executeSql.groovy --parameters "update cmssite set p_active = true where p_uid ='poland'"
 
 sqlToExecute = '''$1'''
 if (sqlToExecute.equals('$' + '1')) {
