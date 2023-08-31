@@ -1,0 +1,9 @@
+select {c.id},{cv.version},{p.code},{ist.lastsynctime},{p.modifiedtime} as productModifiedTime
+from {
+    product as p
+    join catalogversion as cv on {p.catalogversion}={cv.pk}
+    join catalog as c on {cv.catalog}={c.pk}
+    join itemsynctimestamp as ist on {ist.sourceitem}={p.pk}
+}
+where
+    {p.modifiedtime} > {ist.lastsynctime}
