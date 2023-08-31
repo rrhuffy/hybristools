@@ -19,11 +19,14 @@ xs() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/execute_script.py "
 xg() { xs "$1" groovy "${@:2}"; }
 xgr() { xs "$1" groovy --rollback "${@:2}"; }
 # if you want to add less at end, then consider using "buffer" to avoid "Broken pipe" errors: "xyz | buffer | less -RF"
-# TODO: try to find a way to preserve header while scrolling
+# TODO: try to find a way to preserve header while scrolling (use ov instead of less as pager?)
 # https://stackoverflow.com/questions/30981056/linux-shell-csv-viewer-tool-that-can-freeze-the-header
 xf() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/execute_flexible_search.py "$1" "${@:2}"; }
 ii() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/import_impex.py "$@"; }
 sl() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/set_logger_level.py "$@"; }
+sld() { sl "$@" DEBUG; }
+sli() { sl "$@" INFO; }
+sldw() { sl "$@" DEBUG && read -p "$@ set to DEBUG, press Enter to change it back to INFO" && echo && sl "$@" INFO; echo "Reverted $@ back to INFO"; }
 sq() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/solr_query.py "$@"; }
 treepywithoutcolor() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/tree.py --color none; }
 ylisten() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/listen_server_logs.py "$@"; }
@@ -33,11 +36,12 @@ fill() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/fill_ignoring_asc
 yinit() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/update_initialize_system.py initialize "$@"; }
 yinitproject() { yinit "${PROJECT_PREFIX_LONG_LOWERCASE}patches,${PROJECT_PREFIX_LONG_LOWERCASE}patches:Include test data:yes" "$@"; }
 yupdate() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/update_initialize_system.py update "$@"; }
-yupdateproject() { yupdate "${PROJECT_PREFIX_LONG_LOWERCASE}patches:Include test data:yes" "$@"; }
+yupdateproject() { yupdate "${PROJECT_PREFIX_LONG_LOWERCASE}patches" "$@"; }
 iimbo() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_impex_with_media_bo.py "$@"; }
 iimhmc() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_impex_with_media_hmc.py "$@"; }
 
 getclipboard() { xclip -selection clipboard -o; }
+realignclipboard() { getclipboard | multiline_tabulate --csv-delimiter=\| | setclipboard ; }
 xgc() { xg "$(getclipboard)" "$@"; }
 xgrc() { xgr "$(getclipboard)" "$@"; }
 xfc() { xf "$(getclipboard)" "$@"; }
@@ -49,8 +53,6 @@ xfawl() { xf "Select * from {$1} where {$2} like '$3'" "${@:4}"; }
 xfawr() { xf "Select * from {$1} where {$2} regexp '$3'" "${@:4}"; }
 xfs()  { xf "Select {$1} from {$2}" "${@:3}"; }
 xfcount() { xf "Select count(*) as ${1}Count from {$1}" "${@:2}"; }
-checkpatchexecutionstatus() { xf "select {patchid},{executiontime},{executionstatus} from {PatchExecution} where {rerunnable}=0 order by {executiontime} desc" $@; }
-checklastpatchwitherror() { xf "select {creationtime},{name} from {PatchExecutionUnit} where {executionStatus} in ({{select {pk} from {ExecutionStatus} where {code}='ERROR'}}) order by {executiontime} desc" --width=1234|fill; }
 
 # show all known data about Item: types inheritance, all fields with relations and 20 example items
 all() { types "$1" && sid "$1" && xfa "$1" 20; }
@@ -80,7 +82,8 @@ restarthybrisserver() { xg "de.hybris.platform.jmx.JmxClient.restartWrapper(new 
 xgsetonline() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk} and {cv.version}='Online'}\").result)"; }
 xgsetstaged() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk} and {cv.version}='Staged'}\").result)"; }
 xgsetall() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk}}\").result)"; }
-runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),true)" && echo "CronJob $1 started"; }
+runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),true)" "${@:2}" && echo "CronJob $1 started and ended"; }
+runcronjobasync() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),false)" "${@:2}" && echo "CronJob $1 started asynchronously"; }
 setparametertemporary() { xg "de.hybris.platform.util.Config.setParameter('$1','$2');"; }
 setparametertemporarywithequals() {
     pattern='^(.+)\s*=\s*(.+)$'
@@ -108,7 +111,7 @@ yf() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --
 yfa() { xgr $PROJECTS_DIR/hybristools/groovy/findWhoIsReferencingThisPk.groovy --parameters "$1" | unroll_pk - | debuginfowarnerrortostderr | multiline_tabulate - -T "${@:2}"; }
 
 removeitem() {
-    if [[ -z "$1" ]]; then
+    if [[ -z "$3" ]]; then
         echo "Usage: removeitem Type qualifier uniqueValue"
         return 1
     fi
@@ -117,7 +120,7 @@ removeitem() {
 }
 
 removeitemwithduplicates() {
-    if [[ -z "$1" ]]; then
+    if [[ -z "$3" ]]; then
         echo "Usage: removeitemwithduplicates Type qualifier uniqueOrNotValue"
         return 1
     fi
@@ -136,7 +139,7 @@ removeallitems() {
 }
 
 updateitem() {
-    if [[ -z "$1" ]]; then
+    if [[ -z "$5" ]]; then
         echo "Usage: updateitem typeToUpdate qualifierNameToFind qualifierValue fieldNameToSet valueToSet"
         return 1
     fi
@@ -145,7 +148,7 @@ updateitem() {
 }
 
 updateallitems() {
-    if [[ -z "$1" ]]; then
+    if [[ -z "$4" ]]; then
         echo "Usage: updateallitems TypeToUpdateAllItems singleUniqueQualifier valueToSetForAllItems"
         return 1
     fi
@@ -246,3 +249,4 @@ hsiwithcustomscript() {
 hsipk() { hsi Item PK "$@"; }
 hsipkwithcustomscript() { hsiwithcustomscript "$1" Item PK "${@:2}"; }
 clearcache() { xg 'cacheRegionProvider.getRegions().each{it.clearCache()};net.sf.ehcache.CacheManager.ALL_CACHE_MANAGERS.each{it.clearAll()};de.hybris.platform.core.Registry.getCurrentTenant().getCache().clear();org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info("Cleared caches");null'; }
+cc() { clearcache; }
