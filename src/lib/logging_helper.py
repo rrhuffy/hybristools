@@ -8,6 +8,11 @@ import sys
 
 from lib import shell_helper
 
+LOGGING_FORMAT_FULL = '%(asctime)s.%(msecs)03d:%(name)s:%(levelname)s:%(message)s'
+LOGGING_FORMAT_WITHOUT_NAME = '%(asctime)s.%(msecs)03d:%(levelname)s:%(message)s'
+LOGGING_FORMAT_WITHOUT_NAME_AND_TIME = '%(levelname)s:%(message)s'
+LOGGING_FORMAT_MESSAGE_ONLY = '%(message)s'
+
 
 class LogLevel(IntEnum):
     TRACE = 0
@@ -48,7 +53,8 @@ def run_ipdb_or_pdb():
     try:
         import ipdb
         ipdb.pm()
-    except ImportError:
+    except (ImportError, AttributeError) as e:
+        print(f'Caught [{e}] when trying to execute ipdb, falling back to pdb')
         import pdb
         pdb.pm()
     print('Quitting debugger')
@@ -83,6 +89,7 @@ class LoggingAction(argparse.Action):
                  dest,
                  change,
                  logging_format,
+                 datefmt,
                  default=0,
                  value_min=LogLevel.TRACE,
                  value_max=LogLevel.CRITICAL,
@@ -102,14 +109,17 @@ class LoggingAction(argparse.Action):
         self.value_max = value_max
         self.dest = dest
         # set default logging level  https://stackoverflow.com/a/12158233/4605582
-        logging.basicConfig(format=logging_format, level=default)
+        logging.basicConfig(format=logging_format, datefmt=datefmt, level=default)
 
     def __call__(self, parser, namespace, values, option_string=None):
         current_value = getattr(namespace, self.dest, self.default)
         new_level = current_value + self.change
+        if new_level == LogLevel.DEBUG:
+            configure_root_logger_format_with_timestamp(LOGGING_FORMAT_WITHOUT_NAME)
         if new_level == LogLevel.TRACE:
             import http.client as http_client
             http_client.HTTPConnection.debuglevel = 1
+            configure_root_logger_format_with_timestamp(LOGGING_FORMAT_FULL)
         setattr(namespace, self.dest, new_level)
         new_level_clamped = _clamp(new_level, self.value_min, self.value_max)
         logging.root.setLevel(new_level_clamped)
@@ -119,18 +129,19 @@ def _clamp(value, value_min, value_max):
     return max(min(value, value_max), value_min)
 
 
-def add_logging_arguments_to_parser(parser, default_level=logging.INFO, logging_format='%(levelname)s: %(message)s'):
-    # logging_format examples: '%(levelname)s: %(message)s' | '%(message)s'
-
+def add_logging_arguments_to_parser(parser, default_level=logging.INFO,
+                                    logging_format=LOGGING_FORMAT_WITHOUT_NAME,
+                                    datefmt='%H:%M:%S'):
+    configure_root_logger_format_with_timestamp()
     # if print(txt, end='') equivalent is needed: "logging.root.handlers[0].terminator=''" is doing it globally
     # or create manually two separate loggers, one normal, with endline='\n' and second, with endline=''
 
     parser.add_argument('-v', '--verbose', dest='logging_level',
                         action=LoggingAction, default=default_level, change=-10, logging_format=logging_format,
-                        help='increase output verbosity (e.g., -vv is more than -v)')
+                        datefmt=datefmt, help='increase output verbosity (e.g., -vv is more than -v)')
     parser.add_argument('-q', '--quiet', dest='logging_level',
                         action=LoggingAction, default=default_level, change=10, logging_format=logging_format,
-                        help='decrease output verbosity (e.g., -qq is more than -q)')
+                        datefmt=datefmt, help='decrease output verbosity (e.g., -qq is more than -q)')
 
 
 def decrease_root_logging_level(amount):
@@ -158,7 +169,7 @@ def decorate_method_with_pysnooper(method, depth=1, *args, **kwargs):
 
 
 def configure_logging_level_with_timestamp(level='INFO', logger=None):
-    formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(name)s;%(levelname)s;%(message)s', '%H:%M:%S')
+    formatter = logging.Formatter(LOGGING_FORMAT_FULL, '%H:%M:%S')
     logger = logger or logging.getLogger()  # either the given logger or the root logger
     logger.setLevel(level)
     # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
@@ -171,8 +182,8 @@ def configure_logging_level_with_timestamp(level='INFO', logger=None):
     console.setLevel(level)
 
 
-def configure_root_logger_format_with_timestamp():
-    formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(name)s;%(levelname)s;%(message)s', '%H:%M:%S')
+def configure_root_logger_format_with_timestamp(format_string=LOGGING_FORMAT_WITHOUT_NAME):
+    formatter = logging.Formatter(format_string, '%H:%M:%S')
     logger = logging.getLogger()
     if logger.handlers:
         console = logger.handlers[0]  # we assume the first handler is the one we want to configure
@@ -183,24 +194,26 @@ def configure_root_logger_format_with_timestamp():
 
 
 def print_stderr(message):
+    # TODO: rename to print_progress? Stderr is only a implementation
+    # TODO: maybe a custom logging handler instead of a separate method?
+    # https://stackoverflow.com/questions/3118059/how-to-write-custom-python-logging-handler
+
     # TODO: when someone uses normal print, clear debug line before printing (is there any option to set line as dirty?)
     #  or just use debug line on the bottom (like in vim)?
     # https://en.wikipedia.org/wiki/ANSI_escape_code
     # CSI s 	SCP, SCOSC 	Save Current Cursor Position
     # CSI u 	RCP, SCORC 	Restore Saved Cursor Position
+    # TODO: or just hook/replace print + logger and if this is unexpected call (not our progress one), then clear stderr line before printing normal stout
 
     now = datetime.now()
     prefix = f'{now:%H:%M:%S}.{now.microsecond // 1000:03d} '
     message = shell_helper.fit_text_printable_part_only(message, already_used_characters=len(prefix))
+    is_debug_logging_disabled = logging.root.getEffectiveLevel() >= LogLevel.INFO
     print(f'{shell_helper.clear_current_line_with_carriage_return()}{prefix}{message}',
-          end='' if logging.root.getEffectiveLevel() >= LogLevel.INFO else '\n',
+          end='' if is_debug_logging_disabled else '\n',
           file=sys.stderr,
           flush=True)
 
 
 def clear_stderr():
-    prefix = '' if logging.root.getEffectiveLevel() >= LogLevel.INFO else '\n'
-    print(f'{prefix}{shell_helper.clear_current_line_with_carriage_return()}',
-          end='',
-          file=sys.stderr,
-          flush=True)
+    print(f'{shell_helper.clear_current_line_with_carriage_return()}', end='', file=sys.stderr, flush=True)

@@ -15,8 +15,7 @@ def get_cache_filename_for_caller(postfix='cache', caller_depth=1):
 
 
 def load_object_from_file(file_path=None, default=None, compress=True):
-    if file_path is None:
-        file_path = get_cache_filename_for_caller(caller_depth=2)
+    file_path = file_path or get_cache_filename_for_caller(caller_depth=2)
 
     if not os.path.exists(file_path):
         return default
@@ -29,6 +28,12 @@ def load_object_from_file(file_path=None, default=None, compress=True):
 
 
 def save_object_to_file(object_to_put, file_path=None, compress=True):
+    # TODO: this is not working when trying to run multiple instances in parallel
+    # https://stackoverflow.com/questions/13446445/python-multiprocessing-safely-writing-to-a-file#comment18392551_13446445
+    # "You're essentially programming a database server here. Have you considered using an existing one?"
+    # TODO: Maybe try sqlite? Maybe it can handle multiple programs?
+    #  https://stackoverflow.com/questions/22160108/can-multiple-applications-access-a-sqlite-database/51994429#51994429
+
     # use urllib.request.pathname2url when using user-provided part of filepath
     # for example regexes can't be saved as file
     if file_path is None:
