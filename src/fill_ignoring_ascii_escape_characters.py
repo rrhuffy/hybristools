@@ -18,7 +18,7 @@ for line in re.split('\r?\n', shell_helper.read_text_from_pipe()):
             escape_sequence_in_progress = True
 
         if printable_characters_printed >= MAX_COLUMNS and not escape_sequence_in_progress:
-            output[-3:] = ['.' * 3]  # change last 3 characters to dots
+            output[-1] = '…'  # change last characters to ellipsis
             output.append(shell_helper.reset_color())  # and reset coloring in this line
             break
 
