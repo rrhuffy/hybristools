@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from urllib.parse import quote_plus
 from urllib.parse import urljoin
+import requests.cookies
 
 import sys
 
@@ -23,7 +24,8 @@ parser.add_argument('query', nargs='?', default='*:*', help='Query to execute, b
 parser.add_argument('parameters', nargs='?', default='', help='Additional parameters, for example "rows=100"'
                                                               ' or "start=100&rows=100"'
                                                               ' or even "facet=true&json.facet.fieldName_string_mv={}"')
-parser.add_argument('--index', '-i', default='.', help='Regex with index to use, case insensitive, default "." == any index')
+parser.add_argument('--index', '-i', default='.',
+                    help='Regex with index to use, case insensitive, default "." == any index')
 # TODO: maybe find solr address by using HAC (from ENV)? solrserver.instances.standalone.* and *.endpoint properties
 parser.add_argument('--address',
                     default=os.environ.get('HYBRIS_SOLR_URL') if os.environ.get('HYBRIS_SOLR_URL') else
@@ -31,11 +33,20 @@ parser.add_argument('--address',
                     help='SOLR address, by default: HYBRIS_SOLR_URL if exists or HYBRIS_HAC_URL with removed /hac suffix and changed 9002 into 8983')
 parser.add_argument('--user', default='solrserver', help='User to log into SOLR, by default solrserver')
 parser.add_argument('--password', default='server123', help='Password to use to log into SOLR, by default server123')
+parser.add_argument('--cookies',
+                    help='Cookies used when communicating with SOLR in SAP Cloud (log in, F12->Network, run query, copy Cookie header value)')
 logging_helper.add_logging_arguments_to_parser(parser)
 args = parser.parse_args()
 session, address = requests_helper.get_session_with_basic_http_auth_and_cleaned_address(args.address)
 
 metrics_address = urljoin(args.address, 'solr/admin/metrics?type=gauge&prefix=CORE')
+cookies = {}
+if args.cookies:
+    for key_val in args.cookies.strip().split(';'):
+        key_val_split = key_val.strip().split('=')
+        key, val = key_val_split[0], '='.join(key_val_split[1:])
+        cookies[key] = val
+session.cookies = requests.cookies.cookiejar_from_dict(cookies)
 get = session.get(metrics_address, auth=(args.user, args.password), verify=False)
 
 name_to_index_with_timestamp = defaultdict(list)
@@ -84,7 +95,8 @@ if index_to_use is None:
 
 logging.debug(f'Index: "{index_to_use}", query: "{args.query}", parameters: "{args.parameters}", results:')
 safe_query = quote_plus(args.query, safe=':')
-address = f'{args.address}/solr/{index_to_use}/select?q={safe_query}' + ('&' + args.parameters if args.parameters else '')
+and_parameters = '&' + (args.parameters if args.parameters else '')
+address = f'{args.address}/solr/{index_to_use}/select?q={safe_query}{and_parameters}'
 requests_get = session.get(address, auth=(args.user, args.password), verify=False)
 result_json = requests_get.json()
 
