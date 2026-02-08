@@ -310,7 +310,7 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
     if len(header_and_data) == 0:
         return 'No data'.center(terminal_width, '-')
 
-    if data_only:
+    if data_only and len(header_and_data) > 1:
         header_and_data = header_and_data[1:]
 
     grouped_output = ''
@@ -374,15 +374,14 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
 
     # replace every line with proper string representation, so for example '\n\t' etc. won't mess the screen
     header_and_data_as_strings = list()
-    for original_entry_line in header_and_data[:limit_entries + 1] if limit_entries else header_and_data:
+    for original_entry_line in header_and_data[:limit_entries + 1] if (
+            limit_entries and limit_entries != -1) else header_and_data:
         temporary_line = list()
         for original_entry_line_value in original_entry_line:
             if original_entry_line_value is not None:
                 original_lines = str(original_entry_line_value)
                 fixed_whitespaces = shell_helper.replace_whitespace_characters_by_their_representations(original_lines)
-                fixed_trailing_multiple_zeros = re.sub(r'(\d\.\d+?)0{2,}$', r'\g<1>0', fixed_whitespaces)
-                fixed_leading_and_trailing_whitespaces = fixed_trailing_multiple_zeros.strip()
-                replaced_value = fixed_leading_and_trailing_whitespaces
+                replaced_value = fixed_whitespaces.strip()
                 temporary_line.append(replaced_value)
             else:
                 temporary_line.append('')
@@ -418,7 +417,8 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
             grouped_output += 'Common'.center(terminal_width, '-')
             grouped_output += '\n'
             grouped_output += multiline_tabulate([column_names_to_remove, column_values_to_remove], width=width,
-                                                 print_empty_columns=print_empty_columns)
+                                                 print_empty_columns=print_empty_columns,
+                                                 ignore_columns=ignore_columns)
             grouped_output += 'Unique'.center(terminal_width, '-')
             grouped_output += '\n'
 
@@ -525,7 +525,9 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
 
     # when unset: transpose and force one line per entry if only one entry exists and has more than 1 column
     if transpose is None:
-        should_transpose = len(header_and_data) == 2 and all(columns_in_row > 1 for columns_in_row in columns_in_rows)
+        should_transpose = (len(header_and_data) == 2
+                            and all(columns_in_row > 9 for columns_in_row in columns_in_rows)
+                            and columns_in_rows != [2, 2])  # don't transpose "square" output like: "h1|h2\nd1|d2"
     else:
         should_transpose = transpose
 
@@ -588,7 +590,7 @@ def multiline_tabulate(header_and_data, separator='|', width=None, use_newlines=
 
     # if only one column and aligning to left, then just straight print every element
     if all(columns_in_row == 1 for columns_in_row in columns_in_rows) and align == 'l':
-        if limit_entries is None:
+        if limit_entries is None or limit_entries == -1:
             one_column_output = '\n'.join([element[0] or '' for element in new_header_and_data]) + '\n'
         else:  # if limit is not None:
             one_column_output = '\n'.join(
@@ -743,8 +745,6 @@ def add_common_parser_arguments(_parser):
     # TODO: allow -s1,2,3 and --sort="column1 name",2,"column 3 name" then sort either by number (if int) or column name (if string)
     _parser.add_argument('--sort', '-s', help='Sort by column number (ascending)', type=int)
     _parser.add_argument('--sort-descending', '-S', help='Sort by column number (descending)', type=int)
-    _parser.add_argument('--pager', default='multiline',
-                         help='Pager to use (empty for nothing), multiline tabulate by default')
     # TODO: argument --jira to print result in form:
     #   ||Heading 1||Heading 2||
     #   |Col A1|Col A2|
