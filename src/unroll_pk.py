@@ -36,10 +36,14 @@ CUSTOM_TYPE_TO_UNIQUE_QUALIFIER = {'Warehouse': 'code',
                                    'CartEntry': 'product',
                                    'PatchExecution': 'patchId',
                                    'SalesAreaCustomerData': 'salesArea',
-                                   # 'CatalogVersion': 'catalog',
-                                   'CatalogVersion': 'version',
+                                   # 'SalesAreaCustomerData': 'pk',
+                                   'CatalogVersion': 'catalog',
+                                   # 'CatalogVersion': 'version',
                                    'CatalogVersionSyncCronJobHistory': 'statusLine',
-                                   'ClassAttributeAssignment': 'classificationAttribute'
+                                   'ClassAttributeAssignment': 'classificationAttribute',
+                                   'ProcessTaskLog': 'actionId',
+                                   'ContentSlotName': 'name',
+                                   'SavedValueEntry': 'newValue',
                                    }
 
 
@@ -200,6 +204,7 @@ def get_key_replacements(item_pk_set, session_, csrf_token_, address, analyse_lo
                 subquery_template_mysql = "{{{{SELECT {{PK}}, {{{qualifier}}} FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
                 subquery_template_mssql = "{{{{SELECT CONVERT(nvarchar(100),{{PK}}) as PK, CONVERT(nvarchar(100),{{{qualifier}}}) as QUALIFIER FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
                 subquery_template = subquery_template_mysql if 'localhost' in address else subquery_template_mssql
+                subquery_template = subquery_template_mysql  # always mysql, because of...current project ;) TODO: make it configurable
 
                 # example for MSSQL (but then it won't work in MySQL...)
                 # subquery_template = "{{{{SELECT {{PK}}, CONVERT(CHAR, {{{qualifier}}}) as v FROM {{{type_name}}} WHERE {{PK}} = '{item_pk}'}}}}"
@@ -297,16 +302,17 @@ if __name__ == '__main__':
 
     # TODO: unroll pk until there are no more pk to check or there is empty output from current pk check
     for analyse_iteration in range(3):
-        logging.debug(f'-----------Analyse #{analyse_iteration}')
+        # get all 13 digit numbers (except current 'PK' column), because they may be a PK of something
+        item_pk_set = {match for match in re.findall(r'(?<!pk\036)\d{13}', text, re.IGNORECASE)}
+
+        logging.debug(f'-----------Analyse #{analyse_iteration}  ({len(item_pk_set)})')
+        logging_helper.print_stderr(f'-----------Analyse #{analyse_iteration} ({len(item_pk_set)})\r')
         # TODO: extract checking PK to check_pk.py with input \d{13} and output: Type, unique field(s?) name + value
 
         # TODO: check if given types aren't in dictionary already, if not then save results as {Type: [uniqueName1,uN2]}
         # TODO: use [hostName,url] as key, to invalidate caches on new machine or other servers)
 
         # TODO: allow two fields per type in dictionary to for example pick 2 values from {Address}
-
-        # get all 13 digit numbers (except current 'PK' column), because they may be a PK of something
-        item_pk_set = {match for match in re.findall(r'(?<!pk\036)\d{13}', text, re.IGNORECASE)}
         logging.debug(f'item_pk_set = {item_pk_set}')
         if item_pk_set:
             _key_to_string = get_key_replacements(item_pk_set, session, csrf_token, address, not args.analyse_short,
@@ -316,6 +322,8 @@ if __name__ == '__main__':
                 for key, replace_string in _key_to_string:
                     logging.debug(f'replacing {key} -> {replace_string} (repr: {replace_string!r})')
                     text = text.replace(key, replace_string)
+
+    logging_helper.clear_stderr()
 
     try:
         for line in text.split('\n'):
