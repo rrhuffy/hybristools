@@ -243,52 +243,161 @@ sedcleanspacecolumns() { sed -E "s/([^ ]+ +){$1}//"; }
 # TODO: maybe just ignore DEBUG|INFO|WARN|ERROR inside multiline_tabulate, because it is used exclusively for that?
 debuginfowarnerrortostderr() { pee 'grep -P "(DEBUG|INFO|WARN|ERROR):" 1>/dev/stderr' 'grep -P -v "(DEBUG|INFO|WARN|ERROR):"'; }
 
-# TODO: simplify unroll_pk usage be either
-# a) integrate unroll_pk inside execute_script (like in execute_flexible_search)
-# b) leave unroll_pk separate, swallow unroll_pk arguments from ${@:4} and pass remaining ones to xg, detach it from execute_flexible_search
-# Problems with version a: tightly coupled scripts, hard to debug unroll_pk when using hsi
-# Problems with version b: hard to execute pipeline function and pass some arguments to first script (xg or xf) and other to unroll_pk
-# TODO: create functions for filtering results to be from: Online, Staged+Online and maybe Staged version
-hsi() {
-    unroll_or_dummy=cat
-    remaining_arguments="${@:4}"
-    if [[ "$4" == "-a" ]]; then
-        unroll_or_dummy="unroll_pk - $4"
-        remaining_arguments="${@:5}"
-    elif [[ "$4" == "-A" ]]; then
-        # -A means no analyse, so don't execute unroll_pk, but swallow this argument
-        remaining_arguments="${@:5}"
-    else
-        # TODO: check what will happen when we want (now default) analyse long but we also want to pass another argument
-        unroll_or_dummy="unroll_pk -"
-    fi
-    # if using xgr with expect_keepass then instead of $'\36' use "'\36'" because it's adding another layer of wrapping...
-    xgr $PROJECTS_DIR/hybristools/groovy/showItem.groovy --parameters "$1" "$2" "$3" $'\36' \
-        | $unroll_or_dummy \
-        | debuginfowarnerrortostderr \
-        | sed -E '/^\{.*\}$/d' \
-        | multiline_tabulate - 123456 --csv-delimiter=$'\36' ${remaining_arguments}
+# pipeline_router: Universal pipeline builder and argument router.
+# As alternative to python architecture like in show_item.py which calls HAC, then imports unroll + multiline_tabulate
+# which gives single source of truth and rich argument parsing via argparse (subcommands, typed flags, built-in --help)
+# but won't solve generic shell pipeline problem: non python tools (hsort) + in-memory bash functions, and 0ms stream piping
+#
+# Syntax:
+#   pipeline_router "cmd1" "cmd2" ... ::: [args...]
+#
+# Routing Rules:
+#   1. Default Target: Plain arguments before any '--' go to the first command (Stage 1).
+#   2. Sequential '--': Advances argument collection to the next command from left to right.
+#   3. Targeted 'N:flag' or 'L:flag': Direct injection to Stage N (1-indexed) or L (last command).
+#      - Single flag / attached:  L:--csv, 3:--csv, 2:-A, 2:-a, 3:--csv-delimiter=,
+#      - Space-delimited value:   2:"-k 2" (or use sequential '-- -k 2')
+#   4. Sub-pipe Chaining: Commands defined with pipes (e.g. "grep ... | sort -n") run intermediate
+#      filters untouched; routed arguments attach directly to the final command in that sub-chain.
+#      For static postfix sinks (e.g. '| less -RF'), pipe outside: pipeline_router ... ::: "$@" | less -RF
+#
+# Dry-run Inspection:
+#   Set DRY_RUN=1 or N=1 to print the assembled pipeline to stderr without executing:
+#     DRY_RUN=1 hsi Product code FOO -A L:--csv
+#     N=1 hsi Product code FOO 2:-a 3:--csv
+#
+# Linearized Examples:
+#   cat names.txt | pipeline_router "grep" "sort" "uniq" "head" ::: "john" -- -f -- -c -- -n 5
+#   hsi Product code FOO                                  # Plain args -> Stage 1 (query)
+#   hsi Product code FOO -- -A                            # Advance to Stage 2 (unroll_pk) via '--'
+#   hsi Product code FOO 2:-A                             # Targeted Stage 2 via 2: (no '--' needed)
+#   hsi Product code FOO L:--csv                          # Targeted last stage via L: (multiline_tabulate)
+#   hsi Product code FOO 2:-A L:--csv                     # Targeted Stage 2 (-A) and last stage (--csv)
+#   hsi Product code FOO -- -A -- --csv                   # Equivalent using sequential '--' boundaries
+#   N=1 hsi Product code FOO -A L:--csv                   # Dry-run: print pipeline without executing
+pipeline_router() {
+    [ $# -eq 0 ] && return 0
+    local cmds=()
+    while [ $# -gt 0 ] && [ "$1" != ":::" ]; do
+        cmds+=("$1")
+        shift
+    done
+
+    [ "$1" != ":::" ] && { echo "pipeline_router: missing ':::' separator between commands and arguments" >&2; return 1; }
+    shift
+
+    local num_cmds=${#cmds[@]}
+    [ $num_cmds -eq 0 ] && { echo "pipeline_router: no commands specified before ':::'" >&2; return 1; }
+
+    local stage=0
+    local -a stage_args
+    for ((i=0; i<num_cmds; i++)); do stage_args[i]=""; done
+
+    for arg in "$@"; do
+        if [ "$arg" = "--" ]; then
+            ((stage++))
+            if [ $stage -ge $num_cmds ]; then
+                echo "pipeline_router: too many '--' stage separators (max $((num_cmds - 1)))" >&2
+                return 1
+            fi
+        # Targeted shortcut: N:flag (1-indexed, e.g. 3:--csv) or L:flag (last command)
+        elif [[ "$arg" =~ ^([1-9][0-9]*|[Ll]):(.*)$ ]]; then
+            local stage_tok="${BASH_REMATCH[1]}"
+            local target_flag="${BASH_REMATCH[2]}"
+            # Map numeric 1..N or L/l directly to stage index (0-indexed)
+            local target_idx
+            [[ "$stage_tok" == [Ll] ]] && target_idx=$((num_cmds - 1)) || target_idx=$((stage_tok - 1))
+            if [ $target_idx -lt $num_cmds ]; then
+                stage_args[$target_idx]+=" $(printf '%q' "$target_flag")"
+            else
+                echo "pipeline_router: stage $arg out of range (1-$num_cmds)" >&2
+                return 1
+            fi
+        else
+            if [ $stage -lt $num_cmds ]; then
+                stage_args[$stage]+=" $(printf '%q' "$arg")"
+            fi
+        fi
+    done
+
+    # Dynamically build pipeline
+    local pipeline=""
+    for i in "${!cmds[@]}"; do
+        [ $i -gt 0 ] && pipeline+=" | "
+        pipeline+="${cmds[$i]}${stage_args[$i]}"
+    done
+
+    # Single-line dry-run feature (DRY_RUN=1 or N=1)
+    [ -n "$DRY_RUN" ] || [ "${N:-}" = "1" ] && { echo "DRY_RUN: $pipeline" >&2; return 0; }
+
+    eval "$pipeline"
 }
 
-hsiwithcustomscript() {
-    unroll_or_dummy=cat
-    remaining_arguments="${@:5}"
-    if [[ "$5" == "-a" ]]; then
-        unroll_or_dummy="unroll_pk - $5"
-        remaining_arguments="${@:6}"
-    elif [[ "$5" == "-A" ]]; then
-        # -A means no analyse, so don't execute unroll_pk, but swallow this argument
-        remaining_arguments="${@:6}"
-    else
-        # TODO: check what will happen when we want (now default) analyse long but we also want to pass another argument
-        unroll_or_dummy="unroll_pk -"
-    fi
+# Examples:
+#   hsi Product code FOO                 # Default: show item, unroll PKs, tabulate output
+#   hsi Product code FOO -A              # Muscle memory: -A skips unroll_pk (Stage 2)
+#   hsi Product code FOO -a              # Muscle memory: -a runs unroll_pk with -a (Stage 2)
+#   hsi Product code FOO --csv           # Muscle memory: bare flags -> multiline_tabulate (Last stage)
+#   hsi Product code FOO -g -T           # Short flags (-g: group, -T: no-transpose) -> multiline_tabulate (Last stage)
+#   hsi Product code FOO -A --csv        # -A to unroll_pk, --csv to multiline_tabulate
+#   hsi Product code FOO 2:-A L:--csv    # Explicit routing: 2: (unroll_pk), L: (multiline_tabulate)
+#   N=1 hsi Product code FOO -A L:--csv  # Dry-run: print pipeline without executing (or DRY_RUN=1)
+hsi() {
+    local t=$1 q=$2 v=$3
+    shift 3 2>/dev/null || { echo "Usage: hsi <ItemType> <QualifierField> <QualifierValue> [flags...]" >&2; return 1; }
+    local qt=$(printf '%q' "$t")
+    local qq=$(printf '%q' "$q")
+    local qv=$(printf '%q' "$v")
+
+    # Preserve muscle memory: translate -a/-A -> 2:, and all other flags/values -> 3:
+    local -a routed=()
+    for arg in "$@"; do
+        case "$arg" in
+            -a|-A)           routed+=("2:$arg") ;; # Muscle memory: unroll_pk (Stage 2)
+            [1-9]*:*|[Ll]:*) routed+=("$arg")   ;; # Explicit routing (1:, 2:, 3:, L:) passes as-is
+            --)              routed+=("$arg")   ;; # Explicit stage separator passes as-is
+            -*)              routed+=("3:$arg") ;; # Any other flag (-g, -T, --csv) -> Stage 3 (multiline_tabulate)
+            *)               routed+=("3:$arg") ;; # Trailing values (e.g. limit) -> Stage 3 (multiline_tabulate)
+        esac
+    done
+
     # if using xgr with expect_keepass then instead of $'\36' use "'\36'" because it's adding another layer of wrapping...
-    xgr <(echo "$1"; cat $PROJECTS_DIR/hybristools/groovy/showItem.groovy) --parameters "$2" "$3" "$4" $'\36' \
-        | $unroll_or_dummy \
-        | debuginfowarnerrortostderr \
-        | sed -E '/^\{.*\}$/d' \
-        | multiline_tabulate - 123456 --csv-delimiter=$'\36' ${remaining_arguments}
+    pipeline_router \
+        "xgr $PROJECTS_DIR/hybristools/groovy/showItem.groovy --parameters $qt $qq $qv \$'\\36'" \
+        "unroll_pk -" \
+        "debuginfowarnerrortostderr | sed -E '/^\\{.*\\}\$/d' | multiline_tabulate - 123456 --csv-delimiter=\$'\\36'" \
+        ::: "${routed[@]}"
+}
+
+# Examples:
+#   hsiwithcustomscript "script_code" Product code FOO -A
+#   hsiwithcustomscript "script_code" Product code FOO --csv
+hsiwithcustomscript() {
+    local script=$1 t=$2 q=$3 v=$4
+    shift 4 2>/dev/null || { echo "Usage: hsiwithcustomscript <custom_groovy_script> <ItemType> <QualifierField> <QualifierValue> [flags...]" >&2; return 1; }
+    local qscript=$(printf '%q' "$script")
+    local qt=$(printf '%q' "$t")
+    local qq=$(printf '%q' "$q")
+    local qv=$(printf '%q' "$v")
+
+    # Preserve muscle memory: translate -a/-A -> 2:, and all other flags/values -> 3:
+    local -a routed=()
+    for arg in "$@"; do
+        case "$arg" in
+            -a|-A)           routed+=("2:$arg") ;; # Muscle memory: unroll_pk (Stage 2)
+            [1-9]*:*|[Ll]:*) routed+=("$arg")   ;; # Explicit routing (1:, 2:, 3:, L:) passes as-is
+            --)              routed+=("$arg")   ;; # Explicit stage separator passes as-is
+            -*)              routed+=("3:$arg") ;; # Any other flag (-g, -T, --csv) -> Stage 3 (multiline_tabulate)
+            *)               routed+=("3:$arg") ;; # Trailing values (e.g. limit) -> Stage 3 (multiline_tabulate)
+        esac
+    done
+
+    # if using xgr with expect_keepass then instead of $'\36' use "'\36'" because it's adding another layer of wrapping...
+    pipeline_router \
+        "xgr <(printf '%s\n' $qscript; cat \$PROJECTS_DIR/hybristools/groovy/showItem.groovy) --parameters $qt $qq $qv \$'\\36'" \
+        "unroll_pk -" \
+        "debuginfowarnerrortostderr | sed -E '/^\\{.*\\}\$/d' | multiline_tabulate - 123456 --csv-delimiter=\$'\\36'" \
+        ::: "${routed[@]}"
 }
 hsipk() { hsi Item PK "$@"; }
 hsipkwithcustomscript() { hsiwithcustomscript "$1" Item PK "${@:2}"; }
