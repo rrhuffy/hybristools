@@ -10,9 +10,9 @@ export PROJECTS_DIR=${PROJECTS_DIR:-/mnt/c/Projects}
 
 # set python3 binary using global or venv version and store in PYTHON_FOR_HYBRISTOOLS
 # TODO: maybe there is simpler way to use venv if exist and global python3 if someone doesn't care about venv?
-PYTHON_FOR_HYBRISTOOLS=python3
+export PYTHON_FOR_HYBRISTOOLS=python3
 if [[ -L "$PROJECTS_DIR/hybristools/venv/bin/python3" ]]; then
-    PYTHON_FOR_HYBRISTOOLS="$PROJECTS_DIR/hybristools/venv/bin/python3"
+    export PYTHON_FOR_HYBRISTOOLS="$PROJECTS_DIR/hybristools/venv/bin/python3"
 fi
 
 xs() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/execute_script.py "$@"; }
@@ -31,7 +31,9 @@ sq() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/solr_query.py "$@";
 treepywithoutcolor() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/tree.py --color none; }
 ylisten() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/listen_server_logs.py "$@"; }
 multiline_tabulate() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/multiline_tabulate.py "$@"; }
+alias mt=multiline_tabulate
 unroll_pk() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/unroll_pk.py "$@"; }
+unroll_pk_groovy() { base64 -w0 | xg "$PROJECTS_DIR/hybristools/groovy/unrollPk.groovy" --parameters "$@"; }
 fill() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/fill_ignoring_ascii_escape_characters.py "$@"; }
 yinit() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/update_initialize_system.py initialize "$@"; }
 yinitproject() { yinit "${PROJECT_PREFIX_LONG_LOWERCASE}patches,${PROJECT_PREFIX_LONG_LOWERCASE}patches:Include test data:yes" "$@"; }
@@ -42,10 +44,10 @@ iimhmc() { $PYTHON_FOR_HYBRISTOOLS $PROJECTS_DIR/hybristools/src/hybris_import_i
 
 getclipboard() { xclip -selection clipboard -o; }
 realignclipboard() { getclipboard | multiline_tabulate --csv-delimiter=\| | setclipboard ; }
-xgc() { xg "$(getclipboard)" "$@"; }
-xgrc() { xgr "$(getclipboard)" "$@"; }
-xfc() { xf "$(getclipboard)" "$@"; }
-iic() { getclipboard && echo && ii "$(getclipboard)" "$@"; }
+xgc() { getclipboard > /dev/stderr; xg "$(getclipboard)" "$@"; }
+xgrc() { getclipboard > /dev/stderr; xgr "$(getclipboard)" "$@"; }
+xfc() { getclipboard > /dev/stderr; xf "$(getclipboard)" "$@"; }
+iic() { getclipboard > /dev/stderr; ii "$(getclipboard)" "$@"; }
 
 xfa() { xf "Select * from {$1}" "${@:2}"; }
 xfaw() { xf "Select * from {$1} where {$2} = '$3'" "${@:4}"; }
@@ -84,16 +86,17 @@ xgsetstaged() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSear
 xgsetall() { xg "catalogVersionService.setSessionCatalogVersions(flexibleSearchService.search(\"select {cv.pk} from {CatalogVersion as cv join Catalog as c on {cv.catalog}={c.pk}}\").result)"; }
 runcronjob() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),true)" "${@:2}" && echo "CronJob $1 started and ended"; }
 runcronjobasync() { xg "cronJobService.performCronJob(cronJobService.getCronJob('$1'),false)" "${@:2}" && echo "CronJob $1 started asynchronously"; }
-setparametertemporary() { xg "de.hybris.platform.util.Config.setParameter('$1','$2');"; }
+setparametertemporary() { xg "de.hybris.platform.util.Config.setParameter('$1','$2'); org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info(\"Setting $1 to $2 until node restart\")"; }
 setparametertemporarywithequals() {
     pattern='^(.+)\s*=\s*(.+)$'
     if [[ "$1" =~ $pattern ]]; then
-        xg "de.hybris.platform.util.Config.setParameter('${BASH_REMATCH[1]}','${BASH_REMATCH[2]}');";
+        xg "de.hybris.platform.util.Config.setParameter('${BASH_REMATCH[1]}','${BASH_REMATCH[2]}'); org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info(\"Setting ${BASH_REMATCH[1]} to ${BASH_REMATCH[2]} until node restart\")";
     else
         echo "Cannot find pattern: $pattern"
     fi
 }
 getparameter() { xg "de.hybris.platform.util.Config.getParameter('$1')" "${@:2}"; }
+getparameters() { xg "de.hybris.platform.util.Config.getParametersByPattern('$1').each{println \"\$it.key=\$it.value\"}" "${@:2}"; }
 types() { xgr $PROJECTS_DIR/hybristools/groovy/types.groovy "${@:2}" --parameters "$1" | treepywithoutcolor; }
 typesin() { xgr $PROJECTS_DIR/hybristools/groovy/typesin.groovy "${@:2}" --parameters "$1" | treepywithoutcolor; }
 typesout() { xgr $PROJECTS_DIR/hybristools/groovy/types.groovy "${@:2}" --parameters "$1" | perl -pe "s/^.*?$1/$1/g" | treepywithoutcolor; }
@@ -116,8 +119,10 @@ removeitem() {
         return 1
     fi
 
+    echo "REMOVE $1;$2[unique=true]\n;$3" "${@:4}";
     ii "REMOVE $1;$2[unique=true]\n;$3" "${@:4}";
 }
+removeItemPk() { removeitem Item PK "$1"; }
 
 removeitemwithduplicates() {
     if [[ -z "$3" ]]; then
@@ -144,11 +149,47 @@ updateitem() {
         return 1
     fi
 
+    echo -e "UPDATE $1;$2[unique=true];$4\n;$3;$5" "${@:6}";
     ii "UPDATE $1;$2[unique=true];$4\n;$3;$5" "${@:6}";
+}
+# when we provide last parameters: "code" "x" it will call .setCode(x)
+# tested value examples:
+# ''
+# false
+# 'java.util.Date.from(java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())'
+# 'new java.text.SimpleDateFormat("yyyyMMddHHmmss").parse("20250923134500")'
+updateitemgroovy() {
+    if [[ -z "$5" ]]; then
+        echo "Usage: updateitemgroovy typeToUpdate qualifierNameToFind qualifierValue fieldNameToSet(PascalCase or camelCase) valueToSet('', false, 'new Date()')"
+        return 1
+    fi
+
+    xg - <<-EOF
+    query = new de.hybris.platform.servicelayer.search.FlexibleSearchQuery("select {pk} from {$1} where {$2}='$3'")
+    result = flexibleSearchService.searchUnique(query)
+    result.set${4^}($5)
+    modelService.save(result)
+EOF
+}
+
+changepassword() {
+    if [[ -z "$2" ]]; then
+        echo "Usage: changepassword qualifierLikeEmailOrUid valueOfEmailOrUid [newPasswordOrWillBe:testtest]"
+        return 1
+    fi
+
+    xg - <<-EOF
+    query = new de.hybris.platform.servicelayer.search.FlexibleSearchQuery("select {pk} from {B2BCustomer} where {$1}='$2'")
+    result = flexibleSearchService.searchUnique(query)
+    result.setLoginDisabled(false)
+    result.setEncodedPassword("${3:-testtest}")
+    result.setPasswordEncoding("*")
+    modelService.save(result)
+EOF
 }
 
 updateallitems() {
-    if [[ -z "$4" ]]; then
+    if [[ -z "$3" ]]; then
         echo "Usage: updateallitems TypeToUpdateAllItems singleUniqueQualifier valueToSetForAllItems"
         return 1
     fi
@@ -191,7 +232,10 @@ sedcleanhybrislogwithdate() { sed -E "s/([^|]+\|){3} .{11}//"; }
 sedcleanhybrislogwithdateandtime() { sed -E "s/([^|]+\|){3} .{26}//"; }
 # https://superuser.com/questions/380772/removing-ansi-color-codes-from-text-stream/380778#380778
 # \x1b\[[0-9;]*m
-sedcleanhybrislogwithdateandtimeandlevelandthread() { sed -E "s/([^|]+\|){3} .{26}\x1b\[[0-9;]*m[A-Z]+\s+\[[^]]+\]\s*//"; }
+# https://stackoverflow.com/questions/17998978/removing-colors-from-output
+sedcleanansicolors() { sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g"; }
+sedcleanhybrislogwithdateandtimeandlevelandthread() { sedcleanhybrislogwithdateandtime | sedcleanansicolors | sed -E 's/[A-Z]+\s+\[[^]]+\]\s*//'; }
+
 
 sedcleanspacecolumns() { sed -E "s/([^ ]+ +){$1}//"; }
 
@@ -248,5 +292,24 @@ hsiwithcustomscript() {
 }
 hsipk() { hsi Item PK "$@"; }
 hsipkwithcustomscript() { hsiwithcustomscript "$1" Item PK "${@:2}"; }
-clearcache() { xg 'cacheRegionProvider.getRegions().each{it.clearCache()};net.sf.ehcache.CacheManager.ALL_CACHE_MANAGERS.each{it.clearAll()};de.hybris.platform.core.Registry.getCurrentTenant().getCache().clear();org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info("Cleared caches");null'; }
+# history | awk '{print $4, $5, $6}' | sort | uniq -c | sort -n | tail
+# this showed that...`hsi Product code` is most used `hsi` command
+hsipc() { hsi Product code "$@"; }
+clearcache() { xg 'cacheRegionProvider.getRegions().each{it.clearCache()};net.sf.ehcache.CacheManager.ALL_CACHE_MANAGERS.each{it.clearAll()};de.hybris.platform.core.Registry.getCurrentTenant().getCache().clear();org.apache.log4j.Logger.getLogger(de.hybris.platform.servicelayer.internal.jalo.ScriptingJob).info("Cleared caches");"Cleared caches"'; }
 cc() { clearcache; }
+waitForHybris() {
+    # longer/better version of
+    # until curl -o /dev/null -s -m1 -k -f $HYBRIS_HAC_URL; do echo "waiting for hybris..."; sleep 0.1; done;
+    echo -n "waiting for hybris..."
+    counter=0
+    until curl -o /dev/null -s -m1 -k -f $HYBRIS_HAC_URL; do
+#        [ $(( $counter % 5 )) -eq 0 ] && echo -n "."
+        echo -n "."
+        counter=$((counter + 1))
+        sleep 0.1
+    done
+    echo "done"
+}
+
+# TODO: name instead of pretty print (of base/variant product codes)
+pp() { xgr $PROJECTS_DIR/hybristools/groovy/printBaseProductAndVariants.groovy --parameters "$1" "${2:-$COLUMNS}"; }
